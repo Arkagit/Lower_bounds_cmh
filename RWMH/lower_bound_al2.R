@@ -6,20 +6,21 @@ library(latex2exp)
 
 ############## Function
 f = function(x_2, sd, sequence, r1, gauss){
-  dum = 0
   mc.size <- length(gauss)
+  dum = 0
+  foo = rep(0, mc.size)
   for(t1 in 1:mc.size){
     x_1 = r1[t1] 
     z <- gauss
-    foo = rbind(rep(1, mc.size), exp(-(1 + x_1^2)*(z^2 - x_2^2)) )
-    dum <- dum + mean(apply(foo, 2, min))
+    foo = pmin(exp(dnorm(z, 0, sqrt(1/(2*(1 + x_2^2))), log = TRUE) -
+            dnorm(x_1, 0, sqrt(1/(2*(1 + x_2^2))), log = TRUE)), 1)
+    dum <- dum + mean(foo)
   }
   return(dum/(mc.size))
 }
 
 
 ############ Output and Plot
-set.seed(1234)
 sequence = 1e2
 h = c(0.001, 1, 100) # proposal standard deviation
 
@@ -31,7 +32,7 @@ for(i in 1:length(h)){
   lb_list[[i]] = rep(0, length = sequence)
 }
 
-mc.size <- 1e3
+mc.size <- 1e4
 
 parallel::detectCores()
 n.cores <- 4

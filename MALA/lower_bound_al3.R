@@ -7,17 +7,16 @@ library(latex2exp)
 
 ################################################## Function
 f1 = function(x_1, x_2, sd, r1){
-  foo1 = apply(rbind(rep(1, mc.size), exp(-(1 + x_2^2)*(r1^2 - x_1^2) -
-            (r1 - x_1 + x_1*sd^2 + x_2*x_1^2*sd^2)^2/(2*sd^2) +
-            (x_1 - r1 + r1*sd^2 + r1*x_2^2*sd^2)^2/(2*sd^2)) ), 2, min)
+  #foo1 = rep(0, length(r1))
+  foo1 = pmin(exp(dnorm(r1, 0, sqrt(1/(2*(1 + x_2^2))), log = TRUE) - dnorm(x_1, 0, sqrt(1/(2*(1 + x_2^2))), log = TRUE) +
+       dnorm(x_1, r1 - r1*sd^2 - r1*x_2^2*sd^2, sd, log = TRUE) - dnorm(r1, x_1 - x_1*sd^2 - x_1*x_2^2*sd^2, sd, log = TRUE)), 1)
   dum1 = mean(foo1)
 	return(dum1)
 }
 
 f2 = function(x_1, x_2, sd, r2){
-  foo2 = apply(rbind(rep(1, mc.size), exp(-(1 + x_1^2)*(r2^2 - x_2^2) -
-            (r2 - x_2 + x_2*sd^2 + x_1*x_2^2*sd^2)^2/(2*sd^2) +
-            (x_2 - r2 + r2*sd^2 + r2*x_1^2*sd^2)^2/(2*sd^2)) ), 2, min)
+  foo2 = pmin(exp(dnorm(r2, 0, sqrt(1/(2*(1 + x_1^2))), log = TRUE) - dnorm(x_2, 0, sqrt(1/(2*(1 + x_1^2))), log = TRUE) +
+       dnorm(x_2, r2 - r2*sd^2 - r2*x_1^2*sd^2, sd, log = TRUE) - dnorm(r2, x_2 - x_2*sd^2 - x_2*x_1^2*sd^2, sd, log = TRUE)), 1)
  	dum2 = mean(foo2)
 	return(dum2)
 }
@@ -52,7 +51,7 @@ lb_list1 = foreach(k = 1:length(h))%dopar%{
 	  for(i1 in 1:length(l1)){
 	  	x_1 = l1[i1]
 	    x_2 = l2[i2]
-	    r1 = rnorm(mc.size, x_1, sd)
+	    r1 = rnorm(mc.size, x_1 - x_1*sd^2 - x_1*x_2^2*sd^2, sd)
 	    dumat[i1, i2] = f1(x_1, x_2, sd, r1)
 	  }
 	}
@@ -67,7 +66,7 @@ lb_list2 = foreach(k = 1:length(h))%dopar%{
     for(i1 in 1:length(l1)){
       x_1 = l1[i1]
       x_2 = l2[i2]
-      r2 = rnorm(mc.size, x_2, sd)
+      r2 = rnorm(mc.size, x_2 - x_2*sd^2 - x_2*x_1^2*sd^2, sd)
       dumat[i1, i2] = f2(x_1, x_2, sd, r2)
     }
   }
