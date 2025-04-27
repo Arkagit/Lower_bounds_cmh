@@ -26,7 +26,7 @@ f2 = function(x_1, x_2, sd, r2){
 ################################################## CMH -updated (A1)
 sequence = 1e2
 mc.size = 1e4
-h = c(0.001, 1, 100) # proposal standard deviation
+h = c(0.001, 1, 10) # proposal standard deviation
 
 l1 = seq(-5, 5, length.out = sequence)
 l2 = seq(-5, 5, length.out = sequence)

@@ -12,8 +12,8 @@ f = function(x_2, sd, mc.size, r1){
   {
     x_1 = r1[t1] 
     z <- rnorm(mc.size, x_2 - x_2*sd^2 - x_2*x_1^2*sd^2, sd)
-    foo = exp(dnorm(z, 0, sqrt(1/(2*(1 + x_1^2))), log = TRUE) - dnorm(x_2, 0, sqrt(1/(2*(1 + x_1^2))), log = TRUE) +
-      dnorm(z, x_2 - x_2*sd^2 - x_2*x_1^2*sd^2, sd, log = TRUE) - dnorm(x_2, z - z*sd^2 - z*x_1^2*sd^2, sd, log = TRUE))
+    foo = exp(dnorm(z, 0, sqrt(1/(2*(1 + x_1^2))), log = TRUE) - dnorm(x_2, 0, sqrt(1/(2*(1 + x_1^2))), log = TRUE) -
+      dnorm(z, x_2 - x_2*sd^2 - x_2*x_1^2*sd^2, sd, log = TRUE) + dnorm(x_2, z - z*sd^2 - z*x_1^2*sd^2, sd, log = TRUE))
     dum <- dum + mean(pmin(foo, 1))
   }
   return(dum/(mc.size))
@@ -23,7 +23,7 @@ f = function(x_2, sd, mc.size, r1){
 ############ Output and Plot
 set.seed(1234)
 sequence = 1e2
-h = c(0.001, 1, 100) # proposal standard deviation
+h = c(0.001, 1, 10) # proposal standard deviation
 
 l2 = seq(-5, 5, length.out = sequence)# Grid
 

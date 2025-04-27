@@ -22,7 +22,7 @@ f = function(x_2, sd, sequence, r1, gauss){
 
 ############ Output and Plot
 sequence = 1e2
-h = c(0.001, 1, 100) # proposal standard deviation
+h = c(0.001, 1, 10) # proposal standard deviation
 
 l2 = seq(-5, 5, length.out = sequence)# Grid
 
