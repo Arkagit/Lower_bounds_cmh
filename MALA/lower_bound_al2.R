@@ -23,7 +23,7 @@ f = function(x_2, sd, mc.size, r1){
 ############ Output and Plot
 set.seed(1234)
 sequence = 1e2
-h = c(0.001, 1, 10) # proposal standard deviation
+h = c(0.001, 1, 5) # proposal standard deviation
 
 l2 = seq(-5, 5, length.out = sequence)# Grid
 
@@ -55,8 +55,8 @@ lb_list = foreach(k = 1:length(h))%dopar%{
 pdf(paste("As_MALA.pdf"), height = 6, width = 18)
 par(mfrow = c(1,3))
 for(i in 1:length(h)){
-  plot(l2, lb_list[[i]], type = "l", ylim = c(0, 1),
-       ylab = "A*", xlab = TeX(r'($X_2$)'), main = paste("h = ",h[i]))
+  plot(l2, 1 - lb_list[[i]], type = "l", ylim = c(0, 1),
+       ylab = "(1 - A*)", xlab = TeX(r'($X_2$)'), main = paste("h = ",h[i]))
 }
 dev.off()
 

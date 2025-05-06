@@ -1,10 +1,12 @@
+set.seed(1234)
+
 library(ggplot2)
 library(dplyr)
 library(cowplot)
 library(foreach)
 library(doParallel)
 library(latex2exp)
-
+library(patchwork)
 ################################################## Function
 f1 = function(x_1, x_2, sd, r1){
   #foo1 = rep(0, length(r1))
@@ -25,7 +27,7 @@ f2 = function(x_1, x_2, sd, r2){
 ################################################## CMH -updated (A1)
 sequence = 1e2
 mc.size = 1e4
-h = c(0.001, 1, 10) # proposal standard deviation
+h = c(0.001, 1, 5) # proposal standard deviation
 
 l1 = seq(-5, 5, length.out = sequence)
 l2 = seq(-5, 5, length.out = sequence)
@@ -88,6 +90,73 @@ pdf(paste("A2_3d_",i,".pdf"))
   main = paste("h = ",h[i]), phi = 35, shade = 0.4)
   dev.off()
 }
+
+
+####### Plots for A1
+levels = seq(-100, 0, by = 0.01)
+
+df = as.data.frame(matrix(0, nrow = sequence^2, ncol = 3))
+df[,c(1,2)] = expand.grid(x = l1, y = l2)
+df[,3] = log((1 - c(lb_list1[[1]]))*(1 - c(lb_list2[[1]])))
+colnames(df) = c("X1", "X2", "A1")
+plot1 = ggplot(df, aes(x = X1, y = X2, z = A1)) +
+  geom_contour(aes(color = ..level..), breaks = levels) +
+  scale_color_viridis_c(
+    limits = range(levels),   
+    #breaks = levels,          
+    guide = guide_colorbar(title = "Contour levels")
+  ) +
+  labs(
+    title = paste("h = ", h[1]),
+    x = TeX(r'($X_1$)'),
+    y = TeX(r'($X_2$)'),
+    color = "Elevation"
+  ) +
+  theme_minimal()
+
+df = as.data.frame(matrix(0, nrow = sequence^2, ncol = 3))
+df[,c(1,2)] = expand.grid(x = l1, y = l2)
+df[,3] = log((1 - c(lb_list1[[2]]))*(1 - c(lb_list2[[2]])))
+colnames(df) = c("X1", "X2", "A1")
+  plot2 = ggplot(df, aes(x = X1, y = X2, z = A1)) +
+  geom_contour(aes(color = ..level..), breaks = levels) +
+  scale_color_viridis_c(
+    limits = range(levels),   
+    #breaks = levels,          
+    guide = guide_colorbar(title = "Contour levels")
+  ) +
+  labs(
+    title = paste("h = ", h[2]),
+    x = TeX(r'($X_1$)'),
+    y = TeX(r'($X_2$)'),
+    color = "Elevation"
+  ) +
+  theme_minimal()
+
+df = as.data.frame(matrix(0, nrow = sequence^2, ncol = 3))
+df[,c(1,2)] = expand.grid(x = l1, y = l2)
+df[,3] = log((1 - c(lb_list1[[3]]))*(1 - c(lb_list2[[3]])))
+colnames(df) = c("X1", "X2", "A1")
+  plot3 = ggplot(df, aes(x = X1, y = X2, z = A1)) +
+  geom_contour(aes(color = ..level..), breaks = levels) +
+  scale_color_viridis_c(
+    limits = range(levels),   
+    #breaks = levels,          
+    guide = guide_colorbar(title = "Contour levels")
+  ) +
+  labs(
+    title = paste("h = ", h[3]),
+    x = TeX(r'($X_1$)'),
+    y = TeX(r'($X_2$)'),
+    color = "Elevation"
+  ) +
+  theme_minimal()
+
+combined_plot = (plot1/plot2/plot3)
+ggsave(paste("A12_MALA.pdf"), combined_plot, height = 18, width = 8, units = "in")
+
+
+
 
 ####### Plots for A1
 df = cbind(expand.grid(x = l1, y = l2), c(lb_list1[[1]]))
