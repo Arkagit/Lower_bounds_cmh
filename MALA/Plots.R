@@ -45,14 +45,14 @@ pdf(paste("A2_3d_",i,".pdf"))
 
 
 ####### Plots for A1
-levels = seq(0, 100, by = 0.01)
+levels = seq(-50, 0, by = 0.01)
 
 df = as.data.frame(matrix(0, nrow = sequence^2, ncol = 3))
 df[,c(1,2)] = expand.grid(x = l1, y = l2)
-df[,3] = -log((1 - c(lb_list1[[1]]))*(1 - c(lb_list2[[1]])))
+df[,3] = log((1 - c(lb_list1[[1]]))*(1 - c(lb_list2[[1]])))
 colnames(df) = c("X1", "X2", "A1")
 plot1 = ggplot(df, aes(x = X1, y = X2, z = A1)) +
-  geom_contour(aes(color = ..level..), breaks = levels) +
+  geom_contour(aes(color = after_stat(level)), breaks = levels) +
   scale_color_viridis_c(
     limits = range(levels),   
     #breaks = levels,          
@@ -64,14 +64,20 @@ plot1 = ggplot(df, aes(x = X1, y = X2, z = A1)) +
     y = TeX(r'($X_2$)'),
     color = "Elevation"
   ) +
-  theme_minimal()
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(size = 40),  # X-axis label font size
+    axis.title.y = element_text(size = 40),   # Y-axis label font size
+    plot.title = element_text(size = 40, face = "bold", hjust = 0.5)
+  )
 
 df = as.data.frame(matrix(0, nrow = sequence^2, ncol = 3))
 df[,c(1,2)] = expand.grid(x = l1, y = l2)
-df[,3] = -log((1 - c(lb_list1[[2]]))*(1 - c(lb_list2[[2]])))
+df[,3] = log((1 - c(lb_list1[[2]]))*(1 - c(lb_list2[[2]])))
+df[, 3][df[,3] == -Inf] = -15
 colnames(df) = c("X1", "X2", "A1")
   plot2 = ggplot(df, aes(x = X1, y = X2, z = A1)) +
-  geom_contour(aes(color = ..level..), breaks = levels) +
+  geom_contour(aes(color = after_stat(level)), breaks = levels) +
   scale_color_viridis_c(
     limits = range(levels),   
     #breaks = levels,          
@@ -83,14 +89,19 @@ colnames(df) = c("X1", "X2", "A1")
     y = TeX(r'($X_2$)'),
     color = "Elevation"
   ) +
-  theme_minimal()
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(size = 40),  # X-axis label font size
+    axis.title.y = element_text(size = 40),   # Y-axis label font size
+    plot.title = element_text(size = 40, face = "bold", hjust = 0.5)
+  )
 
 df = as.data.frame(matrix(0, nrow = sequence^2, ncol = 3))
 df[,c(1,2)] = expand.grid(x = l1, y = l2)
-df[,3] = -log((1 - c(lb_list1[[3]]))*(1 - c(lb_list2[[3]])))
+df[,3] = log((1 - c(lb_list1[[3]]))*(1 - c(lb_list2[[3]])))
 colnames(df) = c("X1", "X2", "A1")
   plot3 = ggplot(df, aes(x = X1, y = X2, z = A1)) +
-  geom_contour(aes(color = ..level..), breaks = levels) +
+  geom_contour(aes(color = after_stat(level)), breaks = levels) +
   scale_color_viridis_c(
     limits = range(levels),   
     #breaks = levels,          
@@ -102,9 +113,14 @@ colnames(df) = c("X1", "X2", "A1")
     y = TeX(r'($X_2$)'),
     color = "Elevation"
   ) +
-  theme_minimal()
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(size = 40),  # X-axis label font size
+    axis.title.y = element_text(size = 40),   # Y-axis label font size
+    plot.title = element_text(size = 40, face = "bold", hjust = 0.5)
+  )
 
 combined_plot = (plot1/plot2/plot3)
-ggsave(paste("A12_MALA.pdf"), combined_plot, height = 18, width = 8, units = "in")
+ggsave(paste("A12_MALA.pdf"), combined_plot, height = 20, width = 8, units = "in")
 
 
