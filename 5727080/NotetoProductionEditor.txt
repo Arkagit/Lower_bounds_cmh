@@ -1,0 +1,6 @@
+Dear Production Editor,
+
+This zip file, “supplement.zip,” contains two supplementary files specified in the main manuscript and this .txt file for the Production Editor. One supplementary file is Appendices.pdf and the other is RAM.zip. The second zip file contains the code and data used in the article. 
+
+Best,
+Tak
