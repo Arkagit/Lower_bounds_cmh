@@ -173,9 +173,8 @@ ram.kernel <- function(current.location, current.aux, loc.number, scale) {
   }
 
   acceptance_rate = min(1, exp(l.mh))
-  accp_barker = exp(l.mh)/(1 + exp(l.mh))
 
-  c(x.c, z.c, N.d, N.u, N.dz, accept, acceptance_rate, accp_barker)
+  c(x.c, z.c, N.d, N.u, N.dz, accept, acceptance_rate)
 }
 
 MHwG.RAM <- function(initial.loc, initial.aux, jump.scale, 
@@ -185,7 +184,6 @@ MHwG.RAM <- function(initial.loc, initial.aux, jump.scale,
   n.total <- n.sample + n.burn
   accept <- matrix(0, nrow = n.total, ncol = 4)
   alpha = matrix(0, nrow = n.total, ncol = 4)
-  alpha_bark = matrix(0, nrow = n.total, ncol = 4)
   out <- matrix(NA, nrow = n.total, ncol = 8)
   loc.t <- initial.loc
   aux.t <- initial.aux
@@ -203,7 +201,6 @@ MHwG.RAM <- function(initial.loc, initial.aux, jump.scale,
       Nz[i, j] <- TEMP[19]
       accept[i, j] <- TEMP[20]
       alpha[i, j] = TEMP[21]
-      alpha_bark[i, j] = TEMP[22]
     }
     out[i, ] <- loc.t
   }
@@ -213,8 +210,7 @@ MHwG.RAM <- function(initial.loc, initial.aux, jump.scale,
        N.d = Nd[-c(1 : n.burn), ],
        N.u = Nu[-c(1 : n.burn), ],
        N.z = Nz[-c(1 : n.burn), ],
-       alpha_RAM = alpha,
-       alpha_bark = alpha_bark
+       alpha_RAM = alpha
        )
 
 }
@@ -528,7 +524,7 @@ jumping.scale = matrix(c(seq(0.01, 4, length.out = nsim), seq(0.01, 4, length.ou
                     nrow = nsim, byrow = FALSE)
 
 parallel::detectCores()
-n.cores <- 4
+n.cores <- 10
 doParallel::registerDoParallel(cores = n.cores)
 
 #alpha_list = foreach(k = 1:nsim)%dopar%{
@@ -543,7 +539,6 @@ alpha_list = foreach(k = 1:nsim)%dopar%{
   mat_RAM_J_Barker = list()
   mat_MH = list()
   mat_RAM = list()
-  mat_RAM_bark = list()
   #mat_RAM_Barker = list()
 
   for(i in 1:repet){
@@ -551,12 +546,9 @@ alpha_list = foreach(k = 1:nsim)%dopar%{
                                   Ob, Os, Xb, Xs, Yb, Ys, 
                                   n.sample = 1, n.burn = 0)$alpha_RAM_J_Barker
 
-    test = MHwG.RAM(initial.loc, runif(8), jump.scale = j.scale, 
+    mat_RAM[[i]] = MHwG.RAM(initial.loc, runif(8), jump.scale = j.scale, 
                                   Ob, Os, Xb, Xs, Yb, Ys, 
-                                  n.sample = 1, n.burn = 0)
-    mat_RAM[[i]] = test$alpha_RAM
-
-    mat_RAM_bark[[i]] = test$alpha_bark
+                                  n.sample = 1, n.burn = 0)$alpha_RAM
 
     mat_MH[[i]] = MHwG.Metro(initial.loc, jump.scale = j.scale, 
                                    Ob, Os, Xb, Xs, Yb, Ys, n.sample = 1, n.burn = 0)$alpha_Metro
@@ -568,7 +560,7 @@ alpha_list = foreach(k = 1:nsim)%dopar%{
     print(i)
   }
 
-  out = list(mat_RAM_J_Barker, mat_RAM, mat_RAM_bark, mat_MH) #, mat_RAM_Barker)
+  out = list(mat_RAM_J_Barker, mat_RAM, mat_MH) #, mat_RAM_Barker)
   out
 }
 
