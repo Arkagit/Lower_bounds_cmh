@@ -248,10 +248,7 @@ MHwG.RAM <- function(initial.loc, initial.aux, jump.scale,
   }
   
   list(x = out, 
-       accept = accept[-c(1 : n.burn), ],
-       N.d = Nd[-c(1 : n.burn), ],
-       N.u = Nu[-c(1 : n.burn), ],
-       N.z = Nz[-c(1 : n.burn), ])
+       accept = accept[-c(1 : n.burn), ])
 
 }
 
@@ -427,9 +424,8 @@ int two_coin_algorithm(double c_xy, NumericVector mu, NumericVector mu_p,
 ')
 
 
-ram_2coin_barker_kernel = function(current.location, loc.number, scale, simnum){
+ram_2coin_barker_kernel = function(current.location, loc.number, scale){
   eps <- 10^(-100)
-  check <- rep(0, simnum)
   x.c <- current.location 
   log.x.c.den <- l_target(x.c, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
   x.c.den <- exp(log.x.c.den)
@@ -445,39 +441,32 @@ ram_2coin_barker_kernel = function(current.location, loc.number, scale, simnum){
 
   c.xy <- exp(log.x.c.den - log.x.p.den)
   
-  for(s in 1:simnum){
-    check[s] = two_coin_algorithm(c.xy, x.c, x.p, loc.number, scale, Ob, Os, Xb, Xs, Yb, Ys)
-  }
   
-  check_prob = mean(check); check_prob
+  decision = two_coin_algorithm(c.xy, x.c, x.p, loc.number, scale, Ob, Os, Xb, Xs, Yb, Ys)
 
-  if(rbinom(1, 1, check_prob) == 1){
+  if(decision == 1){
     x.c = x.p
   }
 
-  return(c(x.c, check_prob))
+  return(x.c)
 }
 
 MHwG.RAM.2coin.Barker <- function(initial.loc, jump.scale, 
              Ob, Os, Xb, Xs, Yb, Ys, n.sample = 10, n.burn = 0){
 
   n.total <- n.sample + n.burn
-  alpha = matrix(0, nrow = n.total, ncol = 4)
   out <- matrix(NA, nrow = n.total, ncol = 8)
   loc.t <- initial.loc
   
   for (i in 1 : n.total) {
     for (j in 1 : 4) {
-      TEMP <- ram_2coin_barker_kernel(loc.t, j, jump.scale[j], simnum)
-      loc.t <- TEMP[1 : 8]
-      alpha[i, j] = TEMP[9]
+      TEMP <- ram_2coin_barker_kernel(loc.t, j, jump.scale[j])
+      loc.t <- TEMP
     }
     out[i, ] <- loc.t
   }
   
-  list(x = out, 
-       alpha_RAM_2coin = alpha
-       )
+  list(x = out)
 }
 
 ### Calculating ESJD 
@@ -516,35 +505,15 @@ Rcpp::NumericVector esjd(Rcpp::NumericMatrix chain) {
 
 
 
-Rcpp::cppFunction('
-Rcpp::NumericVector component_ess(Rcpp::NumericMatrix chain, Rcpp::NumericMatrix mat) {
-  int T = chain.nrow();
-  int d = chain.ncol();
-  Rcpp::NumericVector out(d);
-
-  for (int i = 0; i < d; ++i) {
-    // Compute sample mean
-    double mean = 0.0;
-    for (int t = 0; t < T; ++t) {
-      mean += chain(t, i);
-    }
-    mean /= T;
-
-    // Compute sample variance
-    double var = 0.0;
-    for (int t = 0; t < T; ++t) {
-      double diff = chain(t, i) - mean;
-      var += diff * diff;
-    }
-    var /= (T - 1);  // unbiased variance
-
-    // Compute ESS-like quantity
-    out[i] = T * var / mat(i, i);
+component_ess = function(chain){
+  comp_ess = rep(0, 4)
+  for(i in 1:4){
+    minichain = chain[, c(2*i -1, 2*i)]
+    cov_est = mcse.multi(minichain, method = "bm", r =1)$cov
+    comp_ess[i] = multiESS(minichain, cov_est)
   }
-
-  return out;
+  return(comp_ess)
 }
-')
 
 # Comp_ess = function(chain, mat){
 #   out = rep(0, dim(chain)[2])
@@ -556,8 +525,9 @@ Rcpp::NumericVector component_ess(Rcpp::NumericMatrix chain, Rcpp::NumericMatrix
 
 
 
-# chain <- matrix(rnorm(1000 * 3), ncol = 3)
-# mat <- diag(c(0.5, 1.2, 0.8))
+ # chain <- matrix(rnorm(1000 * 8), ncol = 8)
+ # component_ess(chain)
+# mat <- diag(rep(1, 8))
 
 # Comp_ess_cpp(chain, mat)
 

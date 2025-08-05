@@ -47,10 +47,6 @@ eps = 10^(-100)
 samp_size = c(1e4, 5e4)
 repet = 1e2
 nsim = 2e1
-simnum = 1e2
-
-low_lim = 0.0001
-up_lim = 2
 
 parallel::detectCores()
 n.cores <- 8
@@ -77,7 +73,7 @@ j.scale = rep(1.08, 4)
   esjd_MH = list()
   esjd_RAB_2coin = list()
 
-alpha_list = list(0)
+alpha_list = list()
 
 alpha_list = foreach(k = 1:repet)%dopar%{
   
