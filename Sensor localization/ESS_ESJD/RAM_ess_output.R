@@ -8,7 +8,7 @@ library(doParallel)
 library(matrixcalc)
 
 
-source("Trans_rcpp.R")
+source("RAM_ess_func_rcpp.R")
 ############################ Example 3: Sensor location problem
 
 ######## Data
