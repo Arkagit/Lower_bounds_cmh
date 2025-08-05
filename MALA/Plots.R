@@ -11,19 +11,22 @@ library(patchwork)
 load("lower_bound.Rdata")
 
 ################################################## Plots - CMH1
-pdf(paste("As_MALA.pdf"), height = 6, width = 18)
-par(mfrow = c(1,3))
-for(i in 1:length(h)){
-  plot(l2, 1 - lb_list[[i]], type = "l", ylim = c(0, 1),
-       ylab = "(1 - A*)", xlab = TeX(r'($X_2$)'), main = paste("h = ",h[i]))
-}
-dev.off()
+pdf("As_MALA.pdf", height = 8, width = 25)
 
-pdf(paste("Hist_al2.pdf"), height = 6, width = 8)
-par(mfrow = c(1,3))
-for(i in 1:length(h)){
-  hist(lb_list[[i]], xlim = c(0, 1), main = paste("h = ",h[i]), xlab = "A*")
+par(mfrow = c(1, 3), mar = c(7, 7, 6, 4)) 
+
+for (i in 1:length(h)) {
+  plot(l2, 1 - lb_list[[i]],
+       type = "l",
+       ylim = c(0, 1),
+       ylab = "(1 - A*)",
+       xlab = TeX(r'($X_2$)'),
+       main = paste("h = ", h[i]),
+       cex.lab = 5,     
+       cex.main = 5.0    
+  )
 }
+
 dev.off()
 
 

@@ -1,0 +1,1210 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ############### RAM transition used at each iteration
+> ############### target function is defined as a function "target"
+> ############### See line 156 for example.
+> set.seed(1234)  
+> 
+> library(foreach)
+> library(doParallel)
+Loading required package: iterators
+Loading required package: parallel
+> library(matrixcalc)
+> 
+> 
+> source("Trans_rcpp.R")
+Registered S3 methods overwritten by 'RcppEigen':
+  method               from         
+  predict.fastLm       RcppArmadillo
+  print.fastLm         RcppArmadillo
+  summary.fastLm       RcppArmadillo
+  print.summary.fastLm RcppArmadillo
+
+Attaching package: ‘RcppEigen’
+
+The following objects are masked from ‘package:RcppArmadillo’:
+
+    fastLm, fastLmPure
+
+Warning messages:
+1: No function found for Rcpp::export attribute at file58ddc608aad7c.cpp:5 
+2: No function found for Rcpp::export attribute at file58ddc72199495.cpp:5 
+> ############################ Example 3: Sensor location problem
+> 
+> ######## Data
+> 
+> # Observation indicators from the fifth sensor (1st column) to the first four sensors
+> # and those from the sixth sensor (2nd column) to the first four sensors.
+> Ob <- matrix(c(1, 0, 1, 0, 1, 0, 1, 0), ncol = 2)
+> 
+> # Observation indicators among the first four sensors. 
+> Os <- matrix(c(0, 0, 0, 1,
++                0, 0, 1, 1,
++                0, 1, 0, 0,
++                1, 1, 0, 0), ncol = 4)
+> 
+> # Each row indicates the location of the known sensors (5th and 6th).
+> Xb <- matrix(c(0.5, 0.3, 0.3, 0.7), ncol = 2)
+> 
+> # Each row indicates the location of the unknown sensors (1st, 2nd, 3rd, and 4th).
+> Xs <- matrix(c(0.5748, 0.0991, 0.2578, 0.8546, 
++                0.9069, 0.3651, 0.1350, 0.0392), ncol = 2)
+> 
+> # The observed distances from the fifth sensor (1st column) to the first four sensors
+> # and those from the sixth sensor (2nd column) to the first four sensors.
+> Yb <- matrix(c(0.6103, 0, 0.2995, 0, 
++                0.3631, 0, 0.5656, 0), ncol = 2)
+> 
+> # Observed distances among the first four sensors.
+> Ys <- matrix(c(0, 0, 0, 0.9266,
++                0, 0, 0.2970, 0.8524,
++                0, 0.2970, 0, 0,
++                0.9266, 0.8524, 0, 0), ncol = 4)
+> 
+> eps = 10^(-100)
+> 
+> ###################### Experimental Output
+> samp_size = c(1e4, 5e4)
+> repet = 1e2
+> nsim = 2e1
+> simnum = 1e2
+> 
+> low_lim = 0.0001
+> up_lim = 2
+> jumping.scale = matrix(c(seq(low_lim, up_lim, length.out = nsim), seq(low_lim, up_lim, length.out = nsim),
++                   seq(low_lim, up_lim, length.out = nsim), seq(low_lim, up_lim, length.out = nsim)), 
++                     nrow = nsim, byrow = FALSE)
+> 
+> parallel::detectCores()
+[1] 64
+> n.cores <- 8
+> doParallel::registerDoParallel(cores = n.cores)
+> 
+> initial.loc = c(0.5748, 0.0991, 0.2578, 0.8546, 
++                0.9069, 0.3651, 0.1350, 0.0392)
+> 
+> j.scale = rep(1.08, 4)
+> 
+>   mat_RAM = list()
+>   mat_MH = list()
+>   mat_RAB_2coin = list()
+> 
+>   ess_RAM = list()
+>   ess_MH = list()
+>   ess_RAB_2coin = list()
+> 
+>   comp_ess_RAM = list()
+>   comp_ess_MH = list()
+>   comp_ess_RAB_2coin = list()
+> 
+>   esjd_RAM = list()
+>   esjd_MH = list()
+>   esjd_RAB_2coin = list()
+> 
+> alpha_list = list(0)
+> 
+> alpha_list = foreach(k = 1:repet)%dopar%{
++   
++     print("a")
++     test_RAM = MHwG.RAM(initial.loc, runif(8), jump.scale = j.scale, 
++                                 Ob, Os, Xb, Xs, Yb, Ys, 
++                                 n.sample = max(samp_size), n.burn = 0)
++     print("b")
++ 
++     test_MH = MHwG.Metro(initial.loc = initial.loc, jump.scale = j.scale, 
++                                  Ob, Os, Xb, Xs, Yb, Ys, n.sample = max(samp_size), n.burn = 0)
++ 
++     print("c")
++ 
++     test_RAB_2coin = MHwG.RAM.2coin.Barker(initial.loc, j.scale, 
++              Ob, Os, Xb, Xs, Yb, Ys, n.sample = max(samp_size), n.burn = 0)
++ 
++     for(k1 in 1:length(samp_size)){
++       
++       mat_RAM[[k1]] = mcse.multi(test_RAM$x[1:samp_size[k1], ], method = "bm", r = 1)$cov
++ 
++       if (is.positive.definite(mat_RAM[[k1]]+ t(mat_RAM[[k1]]))) {
++ 
++         ess_RAM[[k1]] = multiESS(test_RAM$x[1:samp_size[k1], ], mat_RAM[[k1]])
++ 
++         comp_ess_RAM[[k1]] = component_ess(test_RAM$x[1:samp_size[k1], ], mat_RAM[[k1]])
++ 
++       } else {
++         ess_RAM[[k1]] = 0
++       }
++ 
++       esjd_RAM[[k1]] = esjd(test_RAM$x[1:samp_size[k1], ])
++ 
++       print("d")
++ 
++       mat_MH[[k1]] = mcse.multi(test_MH$x[1:samp_size[k1], ], method = "bm", r = 1)$cov
++ 
++       if (is.positive.definite(mat_MH[[k1]]+t(mat_MH[[k1]]))) {
++ 
++         ess_MH[[k1]] = multiESS(test_MH$x[1:samp_size[k1], ], mat_MH[[k1]])
++ 
++         comp_ess_MH[[k1]] = component_ess(test_MH$x[1:samp_size[k1], ], mat_MH[[k1]])
++ 
++       } else {
++ 
++         ess_MH[[k1]] = 0
++ 
++       }
++ 
++       esjd_MH[[k1]] = esjd(test_MH$x[1:samp_size[k1], ])
++ 
++       print("e")
++ 
++       mat_RAB_2coin[[k1]] = mcse.multi(test_RAB_2coin$x[1:samp_size[k1], ], method = "bm", r = 1)$cov
++ 
++       if (is.positive.definite(mat_RAB_2coin[[k1]]+ t(mat_RAB_2coin[[k1]]))) {
++ 
++         ess_RAB_2coin[[k1]] = multiESS(test_RAB_2coin$x[1:samp_size[k1], ], mat_RAB_2coin[[k1]])
++ 
++         comp_ess_RAB_2coin[[k1]] = component_ess(test_RAB_2coin$x[1:samp_size[k1], ], mat_RAB_2coin[[k1]])
++ 
++       } else {
++         ess_RAB_2coin[[k1]] = 0
++       }
++ 
++       esjd_RAB_2coin[[k1]] = esjd(test_RAB_2coin$x[1:samp_size[k1], ])
++ 
++       print("f")
++     }
++ 
++     print(k)
++ 
++     out = list(mat_RAM, ess_RAM, comp_ess_RAM, esjd_RAM, mat_MH, ess_MH, comp_ess_MH, esjd_MH, mat_RAB_2coin, ess_RAB_2coin, comp_ess_RAB_2coin, esjd_RAB_2coin) 
++     out
++ 
++   }
+[1] "a"
+[1] "a"
+[1] "a"
+[1] "a"
+[1] "a"
+[1] "a"
+[1] "a"
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 7
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 8
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 5
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 1
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 3
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 6
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 4
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 2
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 15
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 16
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 13
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 9
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 11
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 14
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 10
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 12
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 23
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 24
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 17
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 21
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 19
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 22
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 18
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 20
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 31
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 32
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 25
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 30
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 29
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 27
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 26
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 28
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 39
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 40
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 33
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 37
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 35
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 34
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 38
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 36
+[1] "a"
+[1] "b"
+[1] "c"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 47
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 48
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 41
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 44
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 43
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 42
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 45
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 46
+[1] "a"
+[1] "b"
+[1] "c"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 56
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 55
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 49
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 52
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 50
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 51
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 53
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 54
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "b"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 64
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 63
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 57
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 60
+[1] "a"
+[1] "d"
+[1] "d"
+[1] "e"
+[1] "e"
+[1] "f"
+[1] "f"
+[1] "d"
+[1] "d"
+[1] "e"
+[1] "e"
+[1] "f"
+[1] 58
+[1] "a"
+[1] "f"
+[1] 59
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 61
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 62
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "b"
+[1] "c"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 72
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 71
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 68
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 65
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 66
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 67
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 69
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 70
+[1] "a"
+[1] "c"
+[1] "c"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 80
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 79
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 76
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 73
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 74
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 75
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 77
+[1] "a"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 78
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 88
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 87
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 84
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 81
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 82
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 83
+[1] "a"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 85
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 86
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 95
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 96
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 92
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 89
+[1] "a"
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 90
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 91
+[1] "a"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 93
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 94
+[1] "b"
+[1] "b"
+[1] "c"
+[1] "c"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 100
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 97
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 98
+[1] "d"
+[1] "e"
+[1] "f"
+[1] "d"
+[1] "e"
+[1] "f"
+[1] 99
+> 
+> 
+> 
+> 
+> 
+> 
+> save(repet, j.scale, samp_size, nsim, simnum, jumping.scale, alpha_list, file = "RAB_ess_data.Rdata")
+> 
+> 
+> 
+> proc.time()
+     user    system   elapsed 
+65919.289     2.916  8661.742 
