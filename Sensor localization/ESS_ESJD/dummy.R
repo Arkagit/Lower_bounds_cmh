@@ -74,6 +74,8 @@ mcdata
 
 }
 
+save(data_list, samp_size, j.scale, file = "location_data.Rdata")
+
 
 
 CRAM_data = data_list[[1]][[1]]
