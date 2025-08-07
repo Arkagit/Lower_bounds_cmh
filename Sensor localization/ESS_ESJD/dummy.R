@@ -47,7 +47,7 @@ initial.loc = c(0.5748, 0.0991, 0.2578, 0.8546,
 j.scale = rep(1.08, 4)
 
 parallel::detectCores()
-n.cores <- 1
+n.cores <- 3
 doParallel::registerDoParallel(cores = n.cores)
 
 data_list = list()

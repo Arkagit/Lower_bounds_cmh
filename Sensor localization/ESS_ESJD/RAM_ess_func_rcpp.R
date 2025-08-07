@@ -373,10 +373,10 @@ double l_target(NumericVector loc, double R, double sigma,
   }
 
   double log_lik = 0.0;
-  for (double x : First_term) log_lik += std::log(x + 1e-100);
-  for (double x : Second_term) log_lik += std::log(x + 1e-100);
-  for (double x : First_obs_term) log_lik += std::log(x + 1e-100);
-  for (double x : Second_obs_term) log_lik += std::log(x + 1e-100);
+  for (double x : First_term) log_lik += std::log(x + 1e-308);
+  for (double x : Second_term) log_lik += std::log(x + 1e-308);
+  for (double x : First_obs_term) log_lik += std::log(x + 1e-308);
+  for (double x : Second_obs_term) log_lik += std::log(x + 1e-308);
 
   double prior = 0.0;
   for (int i = 0; i < loc.size(); ++i) {
@@ -393,7 +393,7 @@ int two_coin_algorithm(double c_xy, NumericVector mu, NumericVector mu_p,
                        NumericMatrix Ob, NumericMatrix Os,
                        NumericMatrix Xb, NumericMatrix Xs,
                        NumericMatrix Yb, NumericMatrix Ys) {
-  double eps = 1e-100;
+  double eps = 1e-308;
   NumericVector M = clone(mu);
 
   while (true) {
@@ -425,48 +425,72 @@ int two_coin_algorithm(double c_xy, NumericVector mu, NumericVector mu_p,
 
 
 ram_2coin_barker_kernel = function(current.location, loc.number, scale){
-  eps <- 10^(-100)
+  eps <- 10^(-308)
+
+  ## current location
   x.c <- current.location 
   log.x.c.den <- l_target(x.c, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
   x.c.den <- exp(log.x.c.den)
-  
-
 
   # downhill
-  x.p <- x.c
-  x.p[(2 * loc.number - 1) : (2 * loc.number)] <- x.p[(2 * loc.number - 1) : (2 * loc.number)] + 
+  x.p1 <- x.c
+  x.p1[(2 * loc.number - 1) : (2 * loc.number)] <- x.p1[(2 * loc.number - 1) : (2 * loc.number)] + 
                                                    rnorm(2, 0, scale)
-  log.x.p.den <- l_target(x.p, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
-  x.p.den <- exp(log.x.p.den)
-
-  c.xy <- exp(log.x.c.den - log.x.p.den)
+  log.x.p1.den <- l_target(x.p1, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+  x.p1.den <- exp(log.x.p1.den)
+  while (-rexp(1) > log(x.c.den + eps) - log(x.p1.den + eps)) {
+    x.p1 <- x.c
+    x.p1[(2 * loc.number - 1) : (2 * loc.number)] <- x.p1[(2 * loc.number - 1) : (2 * loc.number)] + 
+                                                     rnorm(2, 0, scale)
+    log.x.p1.den <- l_target(x.p1, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+    x.p1.den <- exp(log.x.p1.den)
+  }
   
-  
-  decision = two_coin_algorithm(c.xy, x.c, x.p, loc.number, scale, Ob, Os, Xb, Xs, Yb, Ys)
-
-  if(decision == 1){
-    x.c = x.p
+  # uphill
+  x.p2 <- x.p1
+  x.p2[(2 * loc.number - 1) : (2 * loc.number)] <- x.p2[(2 * loc.number - 1) : (2 * loc.number)] + 
+                                                   rnorm(2, 0, scale)
+  log.x.p2.den <- l_target(x.p2, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+  x.p2.den <- exp(log.x.p2.den)
+  while (-rexp(1) > log(x.p2.den + eps) - log(x.p1.den + eps)) {
+    x.p2 <- x.p1
+    x.p2[(2 * loc.number - 1) : (2 * loc.number)] <- x.p2[(2 * loc.number - 1) : (2 * loc.number)] + 
+                                                     rnorm(2, 0, scale)
+    log.x.p2.den <- l_target(x.p2, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+    x.p2.den <- exp(log.x.p2.den)
   }
 
-  return(x.c)
+  c.xy <- exp(log.x.c.den - log.x.p2.den)
+  
+  decision = two_coin_algorithm(c.xy, x.c, x.p2, loc.number, scale, Ob, Os, Xb, Xs, Yb, Ys)
+
+  if(decision == 1){
+    x.c = x.p2
+  }
+
+  return(c(x.c, decision))
 }
+
 
 MHwG.RAM.2coin.Barker <- function(initial.loc, jump.scale, 
              Ob, Os, Xb, Xs, Yb, Ys, n.sample = 10, n.burn = 0){
 
   n.total <- n.sample + n.burn
+  accept = matrix(NA, nrow = n.total, ncol = 4)
   out <- matrix(NA, nrow = n.total, ncol = 8)
   loc.t <- initial.loc
   
   for (i in 1 : n.total) {
     for (j in 1 : 4) {
       TEMP <- ram_2coin_barker_kernel(loc.t, j, jump.scale[j])
-      loc.t <- TEMP
+      loc.t <- TEMP[1:8]
+      accept[i,j] = TEMP[9]
     }
     out[i, ] <- loc.t
+    if(i%%1e4 == 0) print(i)
   }
   
-  list(x = out)
+  list(x = out, accept = accept)
 }
 
 ### Calculating ESJD 

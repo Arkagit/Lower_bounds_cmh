@@ -1,7 +1,7 @@
 ############### RAM transition used at each iteration
 ############### target function is defined as a function "target"
 ############### See line 156 for example.
-set.seed(1234)  
+set.seed(11)  
 
 library(foreach)
 library(doParallel)
@@ -41,12 +41,11 @@ Ys <- matrix(c(0, 0, 0, 0.9266,
                0, 0.2970, 0, 0,
                0.9266, 0.8524, 0, 0), ncol = 4)
 
-eps = 10^(-100)
+eps = 10^(-308)
 
 ###################### Experimental Output
-samp_size = c(1e4, 5e4)
+samp_size = 1e6
 repet = 1e2
-nsim = 2e1
 
 parallel::detectCores()
 n.cores <- 8
@@ -90,65 +89,42 @@ alpha_list = foreach(k = 1:repet)%dopar%{
 
     test_RAB_2coin = MHwG.RAM.2coin.Barker(initial.loc, j.scale, 
              Ob, Os, Xb, Xs, Yb, Ys, n.sample = max(samp_size), n.burn = 0)
-
-    for(k1 in 1:length(samp_size)){
       
-      mat_RAM[[k1]] = mcse.multi(test_RAM$x[1:samp_size[k1], ], method = "bm", r = 1)$cov
+      mat_RAM = mcse.multi(test_RAM$x, method = "bm", r = 1)$cov
 
-      if (is.positive.definite(mat_RAM[[k1]]+ t(mat_RAM[[k1]]))) {
+      ess_RAM = multiESS(test_RAM$x, mat_RAM)
 
-        ess_RAM[[k1]] = multiESS(test_RAM$x[1:samp_size[k1], ], mat_RAM[[k1]])
+      comp_ess_RAM = component_ess(test_RAM$x)
 
-        comp_ess_RAM[[k1]] = component_ess(test_RAM$x[1:samp_size[k1], ], mat_RAM[[k1]])
-
-      } else {
-        ess_RAM[[k1]] = 0
-      }
-
-      esjd_RAM[[k1]] = esjd(test_RAM$x[1:samp_size[k1], ])
+      esjd_RAM = esjd(test_RAM$x)
 
       print("d")
 
-      mat_MH[[k1]] = mcse.multi(test_MH$x[1:samp_size[k1], ], method = "bm", r = 1)$cov
+      mat_MH = mcse.multi(test_MH$x, method = "bm", r = 1)$cov
 
-      if (is.positive.definite(mat_MH[[k1]]+t(mat_MH[[k1]]))) {
+      ess_MH = multiESS(test_MH$x, mat_MH)
 
-        ess_MH[[k1]] = multiESS(test_MH$x[1:samp_size[k1], ], mat_MH[[k1]])
+      comp_ess_MH = component_ess(test_MH$x)
 
-        comp_ess_MH[[k1]] = component_ess(test_MH$x[1:samp_size[k1], ], mat_MH[[k1]])
-
-      } else {
-
-        ess_MH[[k1]] = 0
-
-      }
-
-      esjd_MH[[k1]] = esjd(test_MH$x[1:samp_size[k1], ])
+      esjd_MH = esjd(test_MH$x)
 
       print("e")
 
-      mat_RAB_2coin[[k1]] = mcse.multi(test_RAB_2coin$x[1:samp_size[k1], ], method = "bm", r = 1)$cov
+      mat_RAB_2coin = mcse.multi(test_RAB_2coin$x, method = "bm", r = 1)$cov
 
-      if (is.positive.definite(mat_RAB_2coin[[k1]]+ t(mat_RAB_2coin[[k1]]))) {
+      ess_RAB_2coin = multiESS(test_RAB_2coin$x, mat_RAB_2coin)
 
-        ess_RAB_2coin[[k1]] = multiESS(test_RAB_2coin$x[1:samp_size[k1], ], mat_RAB_2coin[[k1]])
+      comp_ess_RAB_2coin = component_ess(test_RAB_2coin$x)
 
-        comp_ess_RAB_2coin[[k1]] = component_ess(test_RAB_2coin$x[1:samp_size[k1], ], mat_RAB_2coin[[k1]])
-
-      } else {
-        ess_RAB_2coin[[k1]] = 0
-      }
-
-      esjd_RAB_2coin[[k1]] = esjd(test_RAB_2coin$x[1:samp_size[k1], ])
-
-      print("f")
-    }
+      esjd_RAB_2coin = esjd(test_RAB_2coin$x)
 
     print(k)
 
-    out = list(mat_RAM, ess_RAM, comp_ess_RAM, esjd_RAM, mat_MH, ess_MH, comp_ess_MH, esjd_MH, mat_RAB_2coin, ess_RAB_2coin, comp_ess_RAB_2coin, esjd_RAB_2coin) 
-    out
+    out = list(mat_RAM, ess_RAM, comp_ess_RAM, esjd_RAM, mat_MH,
+               ess_MH, comp_ess_MH, esjd_MH, mat_RAB_2coin, 
+               ess_RAB_2coin, comp_ess_RAB_2coin, esjd_RAB_2coin)
 
+    out
   }
 
 
@@ -156,6 +132,6 @@ alpha_list = foreach(k = 1:repet)%dopar%{
 
 
 
-save(repet, j.scale, samp_size, nsim, simnum, jumping.scale, alpha_list, file = "RAB_ess_data.Rdata")
+save(repet, j.scale, samp_size, alpha_list, file = "RAB_ess_data.Rdata")
 
 

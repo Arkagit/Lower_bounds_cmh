@@ -6,9 +6,9 @@ ess_mh = matrix(0, ncol = length(samp_size), nrow = repet)
 ess_bark = matrix(0, ncol = length(samp_size), nrow = repet)
 
 for(i in 1:repet){
-	ess_ram[i, ] = as.numeric(c(alpha_list[[i]][[2]][[1]], alpha_list[[i]][[2]][[2]]))
-	ess_mh[i, ] = as.numeric(c(alpha_list[[i]][[6]][[1]], alpha_list[[i]][[6]][[2]]))
-	ess_bark[i, ] = as.numeric(c(alpha_list[[i]][[10]][[1]], alpha_list[[i]][[10]][[2]]))
+	ess_ram[i, ] = as.numeric(alpha_list[[i]][[2]])
+	ess_mh[i, ] = as.numeric(alpha_list[[i]][[6]])
+	ess_bark[i, ] = as.numeric(alpha_list[[i]][[10]])
 }
 
 colMeans(ess_ram); colMeans(ess_mh); colMeans(ess_bark)
@@ -16,14 +16,14 @@ colMeans(ess_ram); colMeans(ess_mh); colMeans(ess_bark)
 
 ################ Componentwise ESS
 
-ess_comp_ram = matrix(0, ncol = 16, nrow = repet)
-ess_comp_mh = matrix(0, ncol = 16, nrow = repet)
-ess_comp_bark = matrix(0, ncol = 16, nrow = repet)
+ess_comp_ram = matrix(0, ncol = 4, nrow = repet)
+ess_comp_mh = matrix(0, ncol = 4, nrow = repet)
+ess_comp_bark = matrix(0, ncol = 4, nrow = repet)
 
 for(i in 1:repet){
-	ess_comp_ram[i, ] = as.numeric(c(alpha_list[[i]][[3]][[1]], alpha_list[[i]][[3]][[2]]))
-	ess_comp_mh[i, ] = as.numeric(c(alpha_list[[i]][[7]][[1]], alpha_list[[i]][[7]][[2]]))
-	ess_comp_bark[i, ] = as.numeric(c(alpha_list[[i]][[11]][[1]], alpha_list[[i]][[11]][[2]]))
+	ess_comp_ram[i, ] = as.numeric(alpha_list[[i]][[3]])
+	ess_comp_mh[i, ] = as.numeric(alpha_list[[i]][[7]])
+	ess_comp_bark[i, ] = as.numeric(alpha_list[[i]][[11]])
 }
 
 colMeans(ess_comp_ram); colMeans(ess_comp_mh); colMeans(ess_comp_bark)
@@ -35,9 +35,9 @@ esjd_mh = matrix(0, ncol = 9, nrow = repet)
 esjd_bark = matrix(0, ncol = 9, nrow = repet)
 
 for(i in 1:repet){
-	esjd_ram[i, ] = as.numeric(c(alpha_list[[i]][[4]][[2]]))
-	esjd_mh[i, ] = as.numeric(c(alpha_list[[i]][[8]][[2]]))
-	esjd_bark[i, ] = as.numeric(c(alpha_list[[i]][[12]][[2]]))
+	esjd_ram[i, ] = as.numeric(alpha_list[[i]][[4]])
+	esjd_mh[i, ] = as.numeric(alpha_list[[i]][[8]])
+	esjd_bark[i, ] = as.numeric(alpha_list[[i]][[12]])
 }
 
 colMeans(esjd_ram); colMeans(esjd_mh); colMeans(esjd_bark)

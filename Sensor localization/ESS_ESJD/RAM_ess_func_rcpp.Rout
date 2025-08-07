@@ -38,56 +38,6 @@ The following objects are masked from ‘package:RcppArmadillo’:
     fastLm, fastLmPure
 
 > 
-> 
-> 
-> cppFunction('Rcpp::List Ise (Rcpp::NumericVector x){
-+   int i = 0;
-+   double y = - x[0];
-+   double z = x[2*i]+ x[2*i+1];
-+   while (z > 0) {
-+   y = y + 2*z;
-+   i = i +1;
-+   z = x[2*i]+ x[2*i+1];
-+ }
-+   Rcpp::List out = Rcpp::List::create(y, i);
-+   return out;
-+ }')
-> 
-> 
-> #new covariance matrix
-> cov.sig <- function(data, type = "geyer"){
-+   n = dim(data)[1]
-+   p = dim(data)[2]
-+   d = rep(0,p)
-+   lag = rep(0,p)
-+ 
-+   if(type == "MomentLS"){
-+     for(i in 1:p){
-+       # compute the empirical autocovariances
-+       r = autocov(data[,i])
-+       # tune delta
-+       delta_tilde = tune_delta(data[,i], nSplits = 5, c_M_const = 0)$delta*0.8
-+       # fit MomentLS
-+       m = SR1(r, delta = delta_tilde) # fit
-+       d[i] = asympVariance(weights = m$weights, support = m$support)
-+     }
-+     covariance = sqrt(d) * cov2cor(mcse.multi(data, method = "bm", r = 1)$cov) * rep(sqrt(d), each = p)
-+     return(list("covariance" = covariance, "est" = colMeans(data)))
-+ 
-+   } else {
-+     # compute the initial sequences
-+     for (i in 1:p) {
-+       Ise_data = Ise(fastacf(data[,i], show = "FALSE", window = "rectangular", lag.max = floor(n/2))$acf)
-+       d[i] = Ise_data[[1]]*var(data[,i])*(length(data[,i]) - 1)/length(data[,i])
-+       lag[i] = Ise_data[[2]]
-+     }
-+     bm_corr = cov2cor(mcse.multi(data, method = "bm", r = 1)$cov)
-+     covariance = sqrt(d) * cov2cor(mcse.multi(data, method = "bm", r = 1)$cov) * rep(sqrt(d), each = p)
-+     covariance = (covariance + t(covariance))/2
-+     return(list("covariance" = covariance, "est" = colMeans(data), "stopping_lag" = lag))
-+   }
-+ }
-> 
 > ######## Data
 > 
 > # Observation indicators from the fifth sensor (1st column) to the first four sensors
@@ -226,7 +176,7 @@ The following objects are masked from ‘package:RcppArmadillo’:
 + }
 + ')
 Warning message:
-No function found for Rcpp::export attribute at file579b52903325c.cpp:5 
+No function found for Rcpp::export attribute at file5f00a1de81be3.cpp:5 
 > 
 > ########## RAM
 > 
@@ -331,11 +281,8 @@ No function found for Rcpp::export attribute at file579b52903325c.cpp:5
 +     out[i, ] <- loc.t
 +   }
 +   
-+   list(x = out[-c(1 : n.burn), ], 
-+        accept = accept[-c(1 : n.burn), ],
-+        N.d = Nd[-c(1 : n.burn), ],
-+        N.u = Nu[-c(1 : n.burn), ],
-+        N.z = Nz[-c(1 : n.burn), ])
++   list(x = out, 
++        accept = accept[-c(1 : n.burn), ])
 + 
 + }
 > 
@@ -380,7 +327,7 @@ No function found for Rcpp::export attribute at file579b52903325c.cpp:5
 +   }
 + 
 +   #print(Sys.time())
-+   list(x = out[-c(1 : n.burn), ], accept = accept[-c(1 : n.burn), ])
++   list(x = out, accept = accept[-c(1 : n.burn), ])
 + 
 + }
 > 
@@ -460,10 +407,10 @@ No function found for Rcpp::export attribute at file579b52903325c.cpp:5
 +   }
 + 
 +   double log_lik = 0.0;
-+   for (double x : First_term) log_lik += std::log(x + 1e-100);
-+   for (double x : Second_term) log_lik += std::log(x + 1e-100);
-+   for (double x : First_obs_term) log_lik += std::log(x + 1e-100);
-+   for (double x : Second_obs_term) log_lik += std::log(x + 1e-100);
++   for (double x : First_term) log_lik += std::log(x + 1e-308);
++   for (double x : Second_term) log_lik += std::log(x + 1e-308);
++   for (double x : First_obs_term) log_lik += std::log(x + 1e-308);
++   for (double x : Second_obs_term) log_lik += std::log(x + 1e-308);
 + 
 +   double prior = 0.0;
 +   for (int i = 0; i < loc.size(); ++i) {
@@ -480,7 +427,7 @@ No function found for Rcpp::export attribute at file579b52903325c.cpp:5
 +                        NumericMatrix Ob, NumericMatrix Os,
 +                        NumericMatrix Xb, NumericMatrix Xs,
 +                        NumericMatrix Yb, NumericMatrix Ys) {
-+   double eps = 1e-100;
++   double eps = 1e-308;
 +   NumericVector M = clone(mu);
 + 
 +   while (true) {
@@ -510,60 +457,76 @@ No function found for Rcpp::export attribute at file579b52903325c.cpp:5
 + }
 + ')
 Warning message:
-No function found for Rcpp::export attribute at file579b5470bbe87.cpp:5 
+No function found for Rcpp::export attribute at file5f00a59b0fefb.cpp:5 
 > 
 > 
-> ram_2coin_barker_kernel = function(current.location, loc.number, scale, simnum){
-+   eps <- 10^(-100)
-+   check <- rep(0, simnum)
+> ram_2coin_barker_kernel = function(current.location, loc.number, scale){
++   eps <- 10^(-308)
++ 
++   ## current location
 +   x.c <- current.location 
 +   log.x.c.den <- l_target(x.c, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
 +   x.c.den <- exp(log.x.c.den)
-+   
-+ 
 + 
 +   # downhill
-+   x.p <- x.c
-+   x.p[(2 * loc.number - 1) : (2 * loc.number)] <- x.p[(2 * loc.number - 1) : (2 * loc.number)] + 
++   x.p1 <- x.c
++   x.p1[(2 * loc.number - 1) : (2 * loc.number)] <- x.p1[(2 * loc.number - 1) : (2 * loc.number)] + 
 +                                                    rnorm(2, 0, scale)
-+   log.x.p.den <- l_target(x.p, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
-+   x.p.den <- exp(log.x.p.den)
-+ 
-+   c.xy <- exp(log.x.c.den - log.x.p.den)
-+   
-+   for(s in 1:simnum){
-+     check[s] = two_coin_algorithm(c.xy, x.c, x.p, loc.number, scale, Ob, Os, Xb, Xs, Yb, Ys)
++   log.x.p1.den <- l_target(x.p1, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
++   x.p1.den <- exp(log.x.p1.den)
++   while (-rexp(1) > log(x.c.den + eps) - log(x.p1.den + eps)) {
++     x.p1 <- x.c
++     x.p1[(2 * loc.number - 1) : (2 * loc.number)] <- x.p1[(2 * loc.number - 1) : (2 * loc.number)] + 
++                                                      rnorm(2, 0, scale)
++     log.x.p1.den <- l_target(x.p1, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
++     x.p1.den <- exp(log.x.p1.den)
 +   }
 +   
-+   check_prob = mean(check); check_prob
-+ 
-+   if(rbinom(1, 1, check_prob) == 1){
-+     x.c = x.p
++   # uphill
++   x.p2 <- x.p1
++   x.p2[(2 * loc.number - 1) : (2 * loc.number)] <- x.p2[(2 * loc.number - 1) : (2 * loc.number)] + 
++                                                    rnorm(2, 0, scale)
++   log.x.p2.den <- l_target(x.p2, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
++   x.p2.den <- exp(log.x.p2.den)
++   while (-rexp(1) > log(x.p2.den + eps) - log(x.p1.den + eps)) {
++     x.p2 <- x.p1
++     x.p2[(2 * loc.number - 1) : (2 * loc.number)] <- x.p2[(2 * loc.number - 1) : (2 * loc.number)] + 
++                                                      rnorm(2, 0, scale)
++     log.x.p2.den <- l_target(x.p2, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
++     x.p2.den <- exp(log.x.p2.den)
 +   }
 + 
-+   return(c(x.c, check_prob))
++   c.xy <- exp(log.x.c.den - log.x.p2.den)
++   
++   decision = two_coin_algorithm(c.xy, x.c, x.p2, loc.number, scale, Ob, Os, Xb, Xs, Yb, Ys)
++ 
++   if(decision == 1){
++     x.c = x.p2
++   }
++ 
++   return(c(x.c, decision))
 + }
+> 
 > 
 > MHwG.RAM.2coin.Barker <- function(initial.loc, jump.scale, 
 +              Ob, Os, Xb, Xs, Yb, Ys, n.sample = 10, n.burn = 0){
 + 
 +   n.total <- n.sample + n.burn
-+   alpha = matrix(0, nrow = n.total, ncol = 4)
++   accept = matrix(NA, nrow = n.total, ncol = 4)
 +   out <- matrix(NA, nrow = n.total, ncol = 8)
 +   loc.t <- initial.loc
 +   
 +   for (i in 1 : n.total) {
 +     for (j in 1 : 4) {
-+       TEMP <- ram_2coin_barker_kernel(loc.t, j, jump.scale[j], simnum)
-+       loc.t <- TEMP[1 : 8]
-+       alpha[i, j] = TEMP[9]
++       TEMP <- ram_2coin_barker_kernel(loc.t, j, jump.scale[j])
++       loc.t <- TEMP[1:8]
++       accept[i,j] = TEMP[9]
 +     }
 +     out[i, ] <- loc.t
++     if(i%%1e4 == 0) print(i)
 +   }
 +   
-+   list(x = out[-c(1 : n.burn), ], 
-+        alpha_RAM_2coin = alpha
-+        )
++   list(x = out, accept = accept)
 + }
 > 
 > ### Calculating ESJD 
@@ -602,35 +565,15 @@ No function found for Rcpp::export attribute at file579b5470bbe87.cpp:5
 > 
 > 
 > 
-> Rcpp::cppFunction('
-+ Rcpp::NumericVector component_ess(Rcpp::NumericMatrix chain, Rcpp::NumericMatrix mat) {
-+   int T = chain.nrow();
-+   int d = chain.ncol();
-+   Rcpp::NumericVector out(d);
-+ 
-+   for (int i = 0; i < d; ++i) {
-+     // Compute sample mean
-+     double mean = 0.0;
-+     for (int t = 0; t < T; ++t) {
-+       mean += chain(t, i);
-+     }
-+     mean /= T;
-+ 
-+     // Compute sample variance
-+     double var = 0.0;
-+     for (int t = 0; t < T; ++t) {
-+       double diff = chain(t, i) - mean;
-+       var += diff * diff;
-+     }
-+     var /= (T - 1);  // unbiased variance
-+ 
-+     // Compute ESS-like quantity
-+     out[i] = T * var / mat(i, i);
+> component_ess = function(chain){
++   comp_ess = rep(0, 4)
++   for(i in 1:4){
++     minichain = chain[, c(2*i -1, 2*i)]
++     cov_est = mcse.multi(minichain, method = "bm", r =1)$cov
++     comp_ess[i] = multiESS(minichain, cov_est)
 +   }
-+ 
-+   return out;
++   return(comp_ess)
 + }
-+ ')
 > 
 > # Comp_ess = function(chain, mat){
 > #   out = rep(0, dim(chain)[2])
@@ -642,8 +585,9 @@ No function found for Rcpp::export attribute at file579b5470bbe87.cpp:5
 > 
 > 
 > 
-> # chain <- matrix(rnorm(1000 * 3), ncol = 3)
-> # mat <- diag(c(0.5, 1.2, 0.8))
+>  # chain <- matrix(rnorm(1000 * 8), ncol = 8)
+>  # component_ess(chain)
+> # mat <- diag(rep(1, 8))
 > 
 > # Comp_ess_cpp(chain, mat)
 > 
@@ -659,4 +603,4 @@ No function found for Rcpp::export attribute at file579b5470bbe87.cpp:5
 > 
 > proc.time()
    user  system elapsed 
- 12.784   1.359  14.165 
+  9.115   0.803   9.933 

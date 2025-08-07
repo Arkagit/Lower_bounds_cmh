@@ -1,7 +1,7 @@
 ############### RAM transition used at each iteration
 ############### target function is defined as a function "target"
 ############### See line 156 for example.
-set.seed(1234)
+set.seed(11)
 
 library(foreach)
 library(doParallel)
@@ -39,7 +39,7 @@ Ys <- matrix(c(0, 0, 0, 0.9266,
                0, 0.2970, 0, 0,
                0.9266, 0.8524, 0, 0), ncol = 4)
 
-eps = 10^(-100)
+eps = 10^(-308)
 
 ###################### Experimental Output
 

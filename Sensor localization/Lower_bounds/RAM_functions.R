@@ -1,68 +1,124 @@
+library(mcmcse)
+library(mcmc)
+library(Rcpp)
+library(phonTools)
+library(RcppArmadillo)
+library(RcppEigen)
+
+
 ######## Target joint posterior density
 
-norm2 <- function(loca, locb) {
-  sqrt(sum((loca - locb)^2))
+cppFunction('
+  double norm2(NumericVector loca, NumericVector locb) {
+    int n = loca.size();
+    double sum_sq = 0.0;
+
+    for (int i = 0; i < n; ++i) {
+      double diff = loca[i] - locb[i];
+      sum_sq += diff * diff;
+    }
+
+    return std::sqrt(sum_sq);
+  }
+')
+
+cppFunction('
+#include <Rcpp.h>
+using namespace Rcpp;
+
+// Helper: Euclidean norm
+double norm2(NumericVector a, NumericVector b) {
+  double sum = 0.0;
+  for (int i = 0; i < a.size(); ++i) {
+    double d = a[i] - b[i];
+    sum += d * d;
+  }
+  return std::sqrt(sum);
 }
 
-l.target <- function(loc, R = 0.3, sigma = 0.02, Ob, Os, Xb, Xs, Yb, Ys) {
+// [[Rcpp::export]]
+double l_target(NumericVector loc, double R, double sigma, 
+                NumericMatrix Ob, NumericMatrix Os, 
+                NumericMatrix Xb, NumericMatrix Xs, 
+                NumericMatrix Yb, NumericMatrix Ys) {
 
-  First.term <- NULL
-  for (i in 1 : 2) {
-    TEMP <- sapply(1 : 4, function(j) {
-      exp(-norm2(Xb[i, ], loc[(2 * j -1) : (2 * j)])^2 / 2 / R^2 * Ob[j, i]) *
-      (1 - exp(-norm2(Xb[i, ], loc[(2 * j -1) : (2 * j)])^2 / 2 / R^2))^(1 - Ob[j, i]) 
-    })
-    First.term <- c(First.term, TEMP)
+  std::vector<double> First_term;
+
+  for (int i = 0; i < 2; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      NumericVector subloc = loc[Range(2 * j, 2 * j + 1)];
+      double d = norm2(Xb(i, _), subloc);
+      double term = std::exp(-d * d / (2 * R * R)) * Ob(j, i) +
+                    std::pow(1 - std::exp(-d * d / (2 * R * R)), 1 - Ob(j, i));
+      First_term.push_back(term);
+    }
   }
 
-  Second.term <- NULL
-  for (i in 1 : 3) {
-    TEMP <- sapply((i + 1) : 4, function(j) {
-      exp(-norm2(loc[(2 * i -1) : (2 * i)], 
-                 loc[(2 * j -1) : (2 * j)])^2 / 2 / R^2 * Os[i, j]) *
-      (1 - exp(-norm2(loc[(2 * i -1) : (2 * i)], 
-                      loc[(2 * j -1) : (2 * j)])^2 / 2 / R^2))^(1 - Os[i, j]) 
-    })
-    Second.term <- c(Second.term, TEMP)
+  std::vector<double> Second_term;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = i + 1; j < 4; ++j) {
+      NumericVector loc_i = loc[Range(2 * i, 2 * i + 1)];
+      NumericVector loc_j = loc[Range(2 * j, 2 * j + 1)];
+      double d = norm2(loc_i, loc_j);
+      double term = std::exp(-d * d / (2 * R * R)) * Os(i, j) +
+                    std::pow(1 - std::exp(-d * d / (2 * R * R)), 1 - Os(i, j));
+      Second_term.push_back(term);
+    }
   }
 
-  First.obs.term <- NULL
-  for (i in 1 : 2) {
-    TEMP <- sapply(1 : 4, function(j) {
-      dnorm(Yb[j, i], mean = norm2(Xb[i, ], loc[(2 * j -1) : (2 * j)]), 
-                      sd = sigma)^Ob[j, i]
-    })
-    First.obs.term <- c(First.obs.term, TEMP)
+  std::vector<double> First_obs_term;
+  for (int i = 0; i < 2; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      NumericVector subloc = loc[Range(2 * j, 2 * j + 1)];
+      double d = norm2(Xb(i, _), subloc);
+      double val = Yb(j, i);
+      double pdf = (1.0 / (sigma * std::sqrt(2 * M_PI))) * 
+                   std::exp(-0.5 * std::pow((val - d) / sigma, 2));
+      First_obs_term.push_back(std::pow(pdf, Ob(j, i)));
+    }
   }
 
-  Second.obs.term <- NULL
-  for (i in 1 : 3) {
-    TEMP <- sapply((i + 1) : 4, function(j) {
-      dnorm(Ys[i, j], mean = norm2(loc[(2 * i -1) : (2 * i)], 
-                                   loc[(2 * j -1) : (2 * j)]), 
-                      sd = sigma)^Os[i, j]
-    })
-    Second.obs.term <- c(Second.obs.term, TEMP)
+  std::vector<double> Second_obs_term;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = i + 1; j < 4; ++j) {
+      NumericVector loc_i = loc[Range(2 * i, 2 * i + 1)];
+      NumericVector loc_j = loc[Range(2 * j, 2 * j + 1)];
+      double d = norm2(loc_i, loc_j);
+      double val = Ys(i, j);
+      double pdf = (1.0 / (sigma * std::sqrt(2 * M_PI))) * 
+                   std::exp(-0.5 * std::pow((val - d) / sigma, 2));
+      Second_obs_term.push_back(std::pow(pdf, Os(i, j)));
+    }
   }
 
-  log.lik <- sum(log(c(First.term, Second.term, First.obs.term, Second.obs.term)))
-  post <- log.lik + sum(dnorm(loc, mean = rep(0, 8), sd = rep(10, 8), log = TRUE))
-  post
+  double log_lik = 0.0;
+  for (double v : First_term) log_lik += std::log(v);
+  for (double v : Second_term) log_lik += std::log(v);
+  for (double v : First_obs_term) log_lik += std::log(v);
+  for (double v : Second_obs_term) log_lik += std::log(v);
 
+  // Prior: standard normal N(0, 10^2) for each loc element
+  double prior = 0.0;
+  for (int i = 0; i < loc.size(); ++i) {
+    prior += R::dnorm(loc[i], 0.0, 10.0, true);  // log = true
+  }
+
+  return log_lik + prior;
 }
+')
 
 
 ######## RAM
 
 ram.kernel <- function(current.location, current.aux, loc.number, scale) {
 
-  eps <- 10^(-100)
+  eps <- 10^(-308)
   accept <- 0
   x.c <- current.location 
-  log.x.c.den <- l.target(x.c, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+  log.x.c.den <- l_target(x.c, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
   x.c.den <- exp(log.x.c.den)
   z.c <- current.aux
-  log.z.c.den <- l.target(z.c, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+  log.z.c.den <- l_target(z.c, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
   z.c.den <- exp(log.z.c.den)
 
 
@@ -70,14 +126,14 @@ ram.kernel <- function(current.location, current.aux, loc.number, scale) {
   x.p1 <- x.c
   x.p1[(2 * loc.number - 1) : (2 * loc.number)] <- x.p1[(2 * loc.number - 1) : (2 * loc.number)] + 
                                                    rnorm(2, 0, scale)
-  log.x.p1.den <- l.target(x.p1, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+  log.x.p1.den <- l_target(x.p1, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
   x.p1.den <- exp(log.x.p1.den)
   N.d <- 1
   while (-rexp(1) > log(x.c.den + eps) - log(x.p1.den + eps)) {
     x.p1 <- x.c
     x.p1[(2 * loc.number - 1) : (2 * loc.number)] <- x.p1[(2 * loc.number - 1) : (2 * loc.number)] + 
                                                      rnorm(2, 0, scale)
-    log.x.p1.den <- l.target(x.p1, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+    log.x.p1.den <- l_target(x.p1, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
     x.p1.den <- exp(log.x.p1.den)
     N.d <- N.d + 1
   }
@@ -86,7 +142,7 @@ ram.kernel <- function(current.location, current.aux, loc.number, scale) {
   x.p2 <- x.p1
   x.p2[(2 * loc.number - 1) : (2 * loc.number)] <- x.p2[(2 * loc.number - 1) : (2 * loc.number)] + 
                                                    rnorm(2, 0, scale)
-  log.x.p2.den <- l.target(x.p2, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+  log.x.p2.den <- l_target(x.p2, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
   x.p2.den <- exp(log.x.p2.den)
   
   N.u <- 1
@@ -94,7 +150,7 @@ ram.kernel <- function(current.location, current.aux, loc.number, scale) {
     x.p2 <- x.p1
     x.p2[(2 * loc.number - 1) : (2 * loc.number)] <- x.p2[(2 * loc.number - 1) : (2 * loc.number)] + 
                                                      rnorm(2, 0, scale)
-    log.x.p2.den <- l.target(x.p2, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+    log.x.p2.den <- l_target(x.p2, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
     x.p2.den <- exp(log.x.p2.den)
     N.u <- N.u + 1
   }
@@ -104,13 +160,13 @@ ram.kernel <- function(current.location, current.aux, loc.number, scale) {
   z <- x.p2
   z[(2 * loc.number - 1) : (2 * loc.number)] <- z[(2 * loc.number - 1) : (2 * loc.number)] + 
                                                 rnorm(2, 0, scale)
-  log.z.den <- l.target(z, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+  log.z.den <- l_target(z, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
   z.den <- exp(log.z.den)
   while (-rexp(1) > log(x.p2.den + eps) - log(z.den + eps)) {
     z <- x.p2
     z[(2 * loc.number - 1) : (2 * loc.number)] <- z[(2 * loc.number - 1) : (2 * loc.number)] + 
                                                   rnorm(2, 0, scale)
-    log.z.den <- l.target(z, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+    log.z.den <- l_target(z, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
     z.den <- exp(log.z.den)
     N.dz <- N.dz + 1
   }
@@ -190,8 +246,8 @@ Metro.kernel <- function(current.location, loc.number, jump.scale) {
                                                   rnorm(2, 0, jump.scale)
   
 
-  l.new = l.target(x.p, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
-  l.current = l.target(current.location, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+  l.new = l_target(x.p, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+  l.current = l_target(current.location, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
 
   #if (is.infinite(l.new) && is.infinite(l.current) && l.new == l.current) {
   #  l.metro <- 0  # or 0, depending on your context
@@ -225,7 +281,6 @@ MHwG.Metro <- function(initial.loc, jump.scale, Ob, Os, Xb, Xs, Yb, Ys, n.sample
       loc.t <- TEMP[1 : 8]
       accept[i, j] <- TEMP[9]
     }
-
     out[i, ] <- loc.t
 
   }
@@ -235,67 +290,210 @@ MHwG.Metro <- function(initial.loc, jump.scale, Ob, Os, Xb, Xs, Yb, Ys, n.sample
 }
 
 ############################# RAM BARKER
-two_coin_algorithm <- function(c.xy, mu, mu.p, loc.number, scale) {
-  repeat {
-    # Step 1: Draw C1 ~ Bern(cy / (cx + cy))
-    C1 <- rbinom(1, 1, 1/(1 + c.xy))
-    
-    if (C1 == 1) {
-      # Step 3: Draw C2 ~ Bern(py)
-      M <- mu
-      M[(2 * loc.number - 1) : (2 * loc.number)] <- M[(2 * loc.number - 1) : (2 * loc.number)] + 
-                                                   rnorm(2, 0, scale)
-      py = min(1, (exp(l.target(mu, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)) + eps) /
-             (exp(l.target(M, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)) + eps))
 
-      C2 <- rbinom(1, 1, py)
-      if (C2 == 1) {
-        return(1)  # Output 1
-      } 
-      # else repeat from beginning
-    } else {
-      M <- mu.p
-      M[(2 * loc.number - 1) : (2 * loc.number)] <- M[(2 * loc.number - 1) : (2 * loc.number)] + 
-                                                   rnorm(2, 0, scale)
-      px = min(1, (exp(l.target(mu.p, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)) + eps) /
-             (exp(l.target(M, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)) + eps))
-      # Step 9: Draw C2 ~ Bern(px)
-      C2 <- rbinom(1, 1, px)
-      if (C2 == 1) {
-        return(0)  # Output 0
+cppFunction('
+#include <Rcpp.h>
+using namespace Rcpp;
+
+// Compute Euclidean norm squared
+double norm2(NumericVector a, NumericVector b) {
+  double sum = 0.0;
+  for (int i = 0; i < a.size(); ++i) {
+    double diff = a[i] - b[i];
+    sum += diff * diff;
+  }
+  return std::sqrt(sum);
+}
+
+// Target log-posterior
+double l_target(NumericVector loc, double R, double sigma,
+                NumericMatrix Ob, NumericMatrix Os,
+                NumericMatrix Xb, NumericMatrix Xs,
+                NumericMatrix Yb, NumericMatrix Ys) {
+
+  std::vector<double> First_term;
+  for (int i = 0; i < 2; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      NumericVector xbj = Xb(i, _);
+      NumericVector locj = loc[Range(2 * j, 2 * j + 1)];
+      double d = norm2(xbj, locj);
+      double exp_term = std::exp(-d * d / (2 * R * R));
+      double val = std::pow(exp_term, Ob(j, i)) *
+                   std::pow(1 - exp_term, 1 - Ob(j, i));
+      First_term.push_back(val);
+    }
+  }
+
+  std::vector<double> Second_term;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = i + 1; j < 4; ++j) {
+      NumericVector loci = loc[Range(2 * i, 2 * i + 1)];
+      NumericVector locj = loc[Range(2 * j, 2 * j + 1)];
+      double d = norm2(loci, locj);
+      double exp_term = std::exp(-d * d / (2 * R * R));
+      double val = std::pow(exp_term, Os(i, j)) *
+                   std::pow(1 - exp_term, 1 - Os(i, j));
+      Second_term.push_back(val);
+    }
+  }
+
+  std::vector<double> First_obs_term;
+  for (int i = 0; i < 2; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      NumericVector xbj = Xb(i, _);
+      NumericVector locj = loc[Range(2 * j, 2 * j + 1)];
+      double d = norm2(xbj, locj);
+      double obs = Yb(j, i);
+      double dens = R::dnorm(obs, d, sigma, false);
+      First_obs_term.push_back(std::pow(dens, Ob(j, i)));
+    }
+  }
+
+  std::vector<double> Second_obs_term;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = i + 1; j < 4; ++j) {
+      NumericVector loci = loc[Range(2 * i, 2 * i + 1)];
+      NumericVector locj = loc[Range(2 * j, 2 * j + 1)];
+      double d = norm2(loci, locj);
+      double obs = Ys(i, j);
+      double dens = R::dnorm(obs, d, sigma, false);
+      Second_obs_term.push_back(std::pow(dens, Os(i, j)));
+    }
+  }
+
+  double log_lik = 0.0;
+  for (double x : First_term) log_lik += std::log(x + 1e-308);
+  for (double x : Second_term) log_lik += std::log(x + 1e-308);
+  for (double x : First_obs_term) log_lik += std::log(x + 1e-308);
+  for (double x : Second_obs_term) log_lik += std::log(x + 1e-308);
+
+  double prior = 0.0;
+  for (int i = 0; i < loc.size(); ++i) {
+    prior += R::dnorm(loc[i], 0.0, 10.0, true);
+  }
+
+  return log_lik + prior;
+}
+
+// Two-coin Barker acceptance
+// [[Rcpp::export]]
+int two_coin_algorithm(double c_xy, NumericVector mu, NumericVector mu_p,
+                       int loc_number, double scale,
+                       NumericMatrix Ob, NumericMatrix Os,
+                       NumericMatrix Xb, NumericMatrix Xs,
+                       NumericMatrix Yb, NumericMatrix Ys) {
+  double eps = 1e-308;
+  NumericVector M = clone(mu);
+
+  while (true) {
+    int C1 = R::rbinom(1, 1.0 / (1.0 + c_xy));
+    if (C1 == 1) {
+      M = clone(mu);
+      for (int i = 0; i < 2; ++i) {
+        M[2 * (loc_number - 1) + i] += R::rnorm(0.0, scale);
       }
-      # else repeat from beginning
+      double log_mu = l_target(mu, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys);
+      double log_M = l_target(M, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys);
+      double py = std::min(1.0, (std::exp(log_mu) + eps) / (std::exp(log_M) + eps));
+      int C2 = R::rbinom(1, py);
+      if (C2 == 1) return 1;
+    } else {
+      M = clone(mu_p);
+      for (int i = 0; i < 2; ++i) {
+        M[2 * (loc_number - 1) + i] += R::rnorm(0.0, scale);
+      }
+      double log_mup = l_target(mu_p, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys);
+      double log_M = l_target(M, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys);
+      double px = std::min(1.0, (std::exp(log_mup) + eps) / (std::exp(log_M) + eps));
+      int C2 = R::rbinom(1, px);
+      if (C2 == 1) return 0;
     }
   }
 }
+')
+
+
+# two_coin_algorithm <- function(c.xy, mu, mu.p, loc.number, scale) {
+#   repeat {
+#     # Step 1: Draw C1 ~ Bern(cy / (cx + cy))
+#     C1 <- rbinom(1, 1, 1/(1 + c.xy))
+    
+#     if (C1 == 1) {
+#       # Step 3: Draw C2 ~ Bern(py)
+#       M <- mu
+#       M[(2 * loc.number - 1) : (2 * loc.number)] <- M[(2 * loc.number - 1) : (2 * loc.number)] + 
+#                                                    rnorm(2, 0, scale)
+#       py = min(1, (exp(l_target(mu, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)) + eps) /
+#              (exp(l_target(M, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)) + eps))
+
+#       C2 <- rbinom(1, 1, py)
+#       if (C2 == 1) {
+#         return(1)  # Output 1
+#       } 
+#       # else repeat from beginning
+#     } else {
+#       M <- mu.p
+#       M[(2 * loc.number - 1) : (2 * loc.number)] <- M[(2 * loc.number - 1) : (2 * loc.number)] + 
+#                                                    rnorm(2, 0, scale)
+#       px = min(1, (exp(l_target(mu.p, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)) + eps) /
+#              (exp(l_target(M, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)) + eps))
+#       # Step 9: Draw C2 ~ Bern(px)
+#       C2 <- rbinom(1, 1, px)
+#       if (C2 == 1) {
+#         return(0)  # Output 0
+#       }
+#       # else repeat from beginning
+#     }
+#   }
+# }
 
 
 ram.2coin.barker.kernel = function(current.location, loc.number, scale, simnum){
-  eps <- 10^(-100)
+  eps <- 10^(-308)
   check <- rep(0, simnum)
+  ## current location
   x.c <- current.location 
-  log.x.c.den <- l.target(x.c, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+  log.x.c.den <- l_target(x.c, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
   x.c.den <- exp(log.x.c.den)
-  
-
 
   # downhill
-  x.p <- x.c
-  x.p[(2 * loc.number - 1) : (2 * loc.number)] <- x.p[(2 * loc.number - 1) : (2 * loc.number)] + 
+  x.p1 <- x.c
+  x.p1[(2 * loc.number - 1) : (2 * loc.number)] <- x.p1[(2 * loc.number - 1) : (2 * loc.number)] + 
                                                    rnorm(2, 0, scale)
-  log.x.p.den <- l.target(x.p, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
-  x.p.den <- exp(log.x.p.den)
+  log.x.p1.den <- l_target(x.p1, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+  x.p1.den <- exp(log.x.p1.den)
+  while (-rexp(1) > log(x.c.den + eps) - log(x.p1.den + eps)) {
+    x.p1 <- x.c
+    x.p1[(2 * loc.number - 1) : (2 * loc.number)] <- x.p1[(2 * loc.number - 1) : (2 * loc.number)] + 
+                                                     rnorm(2, 0, scale)
+    log.x.p1.den <- l_target(x.p1, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+    x.p1.den <- exp(log.x.p1.den)
+  }
+  
+  # uphill
+  x.p2 <- x.p1
+  x.p2[(2 * loc.number - 1) : (2 * loc.number)] <- x.p2[(2 * loc.number - 1) : (2 * loc.number)] + 
+                                                   rnorm(2, 0, scale)
+  log.x.p2.den <- l_target(x.p2, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+  x.p2.den <- exp(log.x.p2.den)
+  while (-rexp(1) > log(x.p2.den + eps) - log(x.p1.den + eps)) {
+    x.p2 <- x.p1
+    x.p2[(2 * loc.number - 1) : (2 * loc.number)] <- x.p2[(2 * loc.number - 1) : (2 * loc.number)] + 
+                                                     rnorm(2, 0, scale)
+    log.x.p2.den <- l_target(x.p2, 0.3, 0.02, Ob, Os, Xb, Xs, Yb, Ys)
+    x.p2.den <- exp(log.x.p2.den)
+  }
 
-  c.xy <- exp(log.x.c.den - log.x.p.den)
+  c.xy <- exp(log.x.c.den - log.x.p2.den)
   
   for(s in 1:simnum){
-    check[s] = two_coin_algorithm(c.xy, x.c, x.p, loc.number, scale)
+    check[s] = two_coin_algorithm(c.xy, x.c, x.p2, loc.number, scale, Ob, Os, Xb, Xs, Yb, Ys)
   }
   
   check_prob = mean(check); check_prob
 
   if(rbinom(1, 1, check_prob) == 1){
-    x.c = x.p
+    x.c = x.p2
   }
 
   return(c(x.c, check_prob))
