@@ -1,7 +1,7 @@
 
-R version 4.4.3 (2025-02-28) -- "Trophy Case"
-Copyright (C) 2025 The R Foundation for Statistical Computing
-Platform: x86_64-pc-linux-gnu
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20 (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
@@ -445,4 +445,4 @@ null device
 > 
 > proc.time()
    user  system elapsed 
-  0.230   0.038   0.252 
+  0.106   0.026   0.175 

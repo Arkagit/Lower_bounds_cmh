@@ -59,7 +59,7 @@ Esjd_comp_ram; Esjd_comp_mh; Esjd_comp_bark
 
 
 set.seed(42)
-group <- rep(c("CRAM", "CMH", "CRAB"), each = 100)
+group <- rep(c("CRAM", "CMH", "CRAB"), each = repet)
 values1 <- c(Esjd_comp_ram[,1], Esjd_comp_mh[,1], Esjd_comp_bark[,1])
 values2 <- c(Esjd_comp_ram[,2], Esjd_comp_mh[,2], Esjd_comp_bark[,2])
 values3 <- c(Esjd_comp_ram[,3], Esjd_comp_mh[,3], Esjd_comp_bark[,3])
