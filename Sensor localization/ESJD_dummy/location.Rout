@@ -1,0 +1,301 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> set.seed(11)  
+> 
+> library(foreach)
+> library(doParallel)
+Loading required package: iterators
+Loading required package: parallel
+> library(matrixcalc)
+> 
+> 
+> source("RAM_ess_func_rcpp.R")
+Registered S3 methods overwritten by 'RcppEigen':
+  method               from         
+  predict.fastLm       RcppArmadillo
+  print.fastLm         RcppArmadillo
+  summary.fastLm       RcppArmadillo
+  print.summary.fastLm RcppArmadillo
+
+Attaching package: ‘RcppEigen’
+
+The following objects are masked from ‘package:RcppArmadillo’:
+
+    fastLm, fastLmPure
+
+Warning messages:
+1: No function found for Rcpp::export attribute at file5ec4220006976.cpp:5 
+2: No function found for Rcpp::export attribute at file5ec423ab514c8.cpp:5 
+> 
+> ######## Data
+> 
+> # Observation indicators from the fifth sensor (1st column) to the first four sensors
+> # and those from the sixth sensor (2nd column) to the first four sensors.
+> Ob <- matrix(c(1, 0, 1, 0, 1, 0, 1, 0), ncol = 2)
+> 
+> # Observation indicators among the first four sensors. 
+> Os <- matrix(c(0, 0, 0, 1,
++                0, 0, 1, 1,
++                0, 1, 0, 0,
++                1, 1, 0, 0), ncol = 4)
+> 
+> # Each row indicates the location of the known sensors (5th and 6th).
+> Xb <- matrix(c(0.5, 0.3, 0.3, 0.7), ncol = 2)
+> 
+> # Each row indicates the location of the unknown sensors (1st, 2nd, 3rd, and 4th).
+> Xs <- matrix(c(0.5748, 0.0991, 0.2578, 0.8546, 
++                0.9069, 0.3651, 0.1350, 0.0392), ncol = 2)
+> 
+> # The observed distances from the fifth sensor (1st column) to the first four sensors
+> # and those from the sixth sensor (2nd column) to the first four sensors.
+> Yb <- matrix(c(0.6103, 0, 0.2995, 0, 
++                0.3631, 0, 0.5656, 0), ncol = 2)
+> 
+> # Observed distances among the first four sensors.
+> Ys <- matrix(c(0, 0, 0, 0.9266,
++                0, 0, 0.2970, 0.8524,
++                0, 0.2970, 0, 0,
++                0.9266, 0.8524, 0, 0), ncol = 4)
+> 
+> eps = 10^(-308)
+> 
+> 
+> samp_size = 1e6
+> initial.loc = c(0.5748, 0.0991, 0.2578, 0.8546, 
++                0.9069, 0.3651, 0.1350, 0.0392)
+> 
+> j.scale = rep(1.08, 4)
+> 
+> parallel::detectCores()
+[1] 64
+> n.cores <- 3
+> doParallel::registerDoParallel(cores = n.cores)
+> 
+> data_list = list()
+> 
+> data_list = foreach(k = 1:3)%dopar%{
++ 
++ 	if(k == 1){
++ 
++ 		mcdata = MHwG.RAM(initial.loc, runif(8), jump.scale = j.scale, 
++                                 Ob, Os, Xb, Xs, Yb, Ys, 
++                                 n.sample = samp_size, n.burn = 0)
++ 
++ 	}else if(k == 2){
++ 
++ 		mcdata = MHwG.Metro(initial.loc = initial.loc, jump.scale = j.scale, 
++                                  Ob, Os, Xb, Xs, Yb, Ys, n.sample = samp_size, n.burn = 0)
++ 
++ 	}else{
++ 
++ 		mcdata = MHwG.RAM.2coin.Barker(initial.loc, j.scale, 
++              Ob, Os, Xb, Xs, Yb, Ys, n.sample = samp_size, n.burn = 0)
++ 	}
++ mcdata
++ 
++ }
+[1] 10000
+[1] 20000
+[1] 30000
+[1] 40000
+[1] 50000
+[1] 60000
+[1] 70000
+[1] 80000
+[1] 90000
+[1] 100000
+[1] 110000
+[1] 120000
+[1] 130000
+[1] 140000
+[1] 150000
+[1] 160000
+[1] 170000
+[1] 180000
+[1] 190000
+[1] 200000
+[1] 210000
+[1] 220000
+[1] 230000
+[1] 240000
+[1] 250000
+[1] 260000
+[1] 270000
+[1] 280000
+[1] 290000
+[1] 300000
+[1] 310000
+[1] 320000
+[1] 330000
+[1] 340000
+[1] 350000
+[1] 360000
+[1] 370000
+[1] 380000
+[1] 390000
+[1] 400000
+[1] 410000
+[1] 420000
+[1] 430000
+[1] 440000
+[1] 450000
+[1] 460000
+[1] 470000
+[1] 480000
+[1] 490000
+[1] 500000
+[1] 510000
+[1] 520000
+[1] 530000
+[1] 540000
+[1] 550000
+[1] 560000
+[1] 570000
+[1] 580000
+[1] 590000
+[1] 600000
+[1] 610000
+[1] 620000
+[1] 630000
+[1] 640000
+[1] 650000
+[1] 660000
+[1] 670000
+[1] 680000
+[1] 690000
+[1] 700000
+[1] 710000
+[1] 720000
+[1] 730000
+[1] 740000
+[1] 750000
+[1] 760000
+[1] 770000
+[1] 780000
+[1] 790000
+[1] 800000
+[1] 810000
+[1] 820000
+[1] 830000
+[1] 840000
+[1] 850000
+[1] 860000
+[1] 870000
+[1] 880000
+[1] 890000
+[1] 900000
+[1] 910000
+[1] 920000
+[1] 930000
+[1] 940000
+[1] 950000
+[1] 960000
+[1] 970000
+[1] 980000
+[1] 990000
+[1] 1000000
+> 
+> save(data_list, samp_size, j.scale, file = "location_data.Rdata")
+> 
+> 
+> 
+> CRAM_data = data_list[[1]][[1]]
+> 
+> CMH_data = data_list[[2]][[1]]
+> 
+> CRAB_data = data_list[[3]][[1]]
+> 
+> pdf("Location_CRAM.pdf", width = 20, height = 20)
+> par(mfrow = c(2,2), mar = c(6, 8, 6, 4))  
+> 
+> plot(CRAM_data[,1], CRAM_data[,2], type = "p", xlab = "x11", ylab = "x12"
++   , main = "Location of x1", xlim = range(CRAM_data[,1]), ylim = range(CRAM_data[,2]),
++   cex.lab = 3,cex.main = 3,cex.axis = 2, cex = 2)
+> 
+> plot(CRAM_data[,3], CRAM_data[,4], type = "p", xlab = "x21", ylab = "x22"
++   , main = "Location of x2", xlim = range(CRAM_data[,3]), ylim = range(CRAM_data[,4]),
++   cex.lab = 3,cex.main = 3,cex.axis = 2, cex = 2)
+> 
+> plot(CRAM_data[,5], CRAM_data[,6], type = "p", xlab = "x31", ylab = "x32"
++   , main = "Location of x3", xlim = range(CRAM_data[,5]), ylim = range(CRAM_data[,6]),
++   cex.lab = 3,cex.main = 3,cex.axis = 2, cex = 2)
+> 
+> plot(CRAM_data[,7], CRAM_data[,8], type = "p", xlab = "x41", ylab = "x42"
++   , main = "Location of x4", xlim = range(CRAM_data[,7]), ylim = range(CRAM_data[,8]),
++   cex.lab = 3,cex.main = 3,cex.axis = 2, cex = 2)
+> 
+> dev.off()
+null device 
+          1 
+> 
+> 
+> pdf("Location_CMH.pdf", width = 20, height = 20)
+> par(mfrow = c(2,2), mar = c(6, 8, 6, 4))  
+> 
+> plot(CMH_data[,1], CMH_data[,2], type = "p", xlab = "x11", ylab = "x12"
++   , main = "Location of x1", xlim = range(CMH_data[,1]), ylim = range(CMH_data[,2]),
++   cex.lab = 3,cex.main = 3,cex.axis = 2, cex = 2)
+> 
+> plot(CMH_data[,3], CMH_data[,4], type = "p", xlab = "x21", ylab = "x22"
++   , main = "Location of x2", xlim = range(CMH_data[,3]), ylim = range(CMH_data[,4]),
++   cex.lab = 3,cex.main = 3,cex.axis = 2, cex = 2)
+> 
+> plot(CMH_data[,5], CMH_data[,6], type = "p", xlab = "x31", ylab = "x32"
++   , main = "Location of x3", xlim = range(CMH_data[,5]), ylim = range(CMH_data[,6]),
++   cex.lab = 3,cex.main = 3,cex.axis = 2, cex = 2)
+> 
+> plot(CMH_data[,7], CMH_data[,8], type = "p", xlab = "x41", ylab = "x42"
++   , main = "Location of x4", xlim = range(CMH_data[,7]), ylim = range(CMH_data[,8]),
++   cex.lab = 3,cex.main = 3,cex.axis = 2, cex = 2)
+> 
+> dev.off()
+null device 
+          1 
+> 
+> 
+> pdf("Location_CRAB.pdf", width = 20, height = 20)
+> par(mfrow = c(2,2), mar = c(6, 8, 6, 4))  
+> 
+> plot(CRAB_data[,1], CRAB_data[,2], type = "p", xlab = "x11", ylab = "x12"
++   , main = "Location of x1", xlim = range(CRAB_data[,1]), ylim = range(CRAB_data[,2]),
++   cex.lab = 3,cex.main = 3,cex.axis = 2, cex = 2)
+> 
+> plot(CRAB_data[,3], CRAB_data[,4], type = "p", xlab = "x21", ylab = "x22"
++   , main = "Location of x2", xlim = range(CRAB_data[,3]), ylim = range(CRAB_data[,4]),
++   cex.lab = 3,cex.main = 3,cex.axis = 2, cex = 2)
+> 
+> plot(CRAB_data[,5], CRAB_data[,6], type = "p", xlab = "x31", ylab = "x32"
++   , main = "Location of x3", xlim = range(CRAB_data[,5]), ylim = range(CRAB_data[,6]),
++   cex.lab = 3,cex.main = 3,cex.axis = 2, cex = 2)
+> 
+> plot(CRAB_data[,7], CRAB_data[,8], type = "p", xlab = "x41", ylab = "x42"
++   , main = "Location of x4", xlim = range(CRAB_data[,7]), ylim = range(CRAB_data[,8]),
++   cex.lab = 3,cex.main = 3,cex.axis = 2, cex = 2)
+> 
+> dev.off()
+null device 
+          1 
+> 
+> 
+> 
+> 
+> proc.time()
+    user   system  elapsed 
+1821.460    6.039  944.761 

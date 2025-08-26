@@ -54,7 +54,7 @@ doParallel::registerDoParallel(cores = n.cores)
 initial.loc = c(0.5748, 0.0991, 0.2578, 0.8546, 
                0.9069, 0.3651, 0.1350, 0.0392)
 
-j.scale = rep(5, 4)
+j.scale = matrix(c(rep(0.01, 4), rep(1, 4), rep(10, 4)), nrow = 3, byrow = TRUE)
 
   mat_RAM = list()
   mat_MH = list()
@@ -75,19 +75,22 @@ j.scale = rep(5, 4)
 alpha_list = list()
 
 alpha_list = foreach(k = 1:repet)%dopar%{
-  
+
+  out = list()
+
+  for(j in 1:dim(j.scale)[1]){
     print("a")
-    test_RAM = MHwG.RAM(initial.loc, runif(8), jump.scale = j.scale, 
+    test_RAM = MHwG.RAM(initial.loc, runif(8), jump.scale = j.scale[j,], 
                                 Ob, Os, Xb, Xs, Yb, Ys, 
                                 n.sample = max(samp_size), n.burn = 0)
     print("b")
 
-    test_MH = MHwG.Metro(initial.loc = initial.loc, jump.scale = j.scale, 
+    test_MH = MHwG.Metro(initial.loc = initial.loc, jump.scale = j.scale[j,], 
                                  Ob, Os, Xb, Xs, Yb, Ys, n.sample = max(samp_size), n.burn = 0)
 
     print("c")
 
-    test_RAB_2coin = MHwG.RAM.2coin.Barker(initial.loc, j.scale, 
+    test_RAB_2coin = MHwG.RAM.2coin.Barker(initial.loc, j.scale[j,], 
              Ob, Os, Xb, Xs, Yb, Ys, n.sample = max(samp_size), n.burn = 0)
       
       mat_RAM = mcse.multi(test_RAM$x, method = "bm", r = 1)$cov
@@ -120,11 +123,13 @@ alpha_list = foreach(k = 1:repet)%dopar%{
 
     print(k)
 
-    out = list(mat_RAM, ess_RAM, comp_ess_RAM, esjd_RAM, mat_MH,
+    out[[j]] = list(mat_RAM, ess_RAM, comp_ess_RAM, esjd_RAM, mat_MH,
                ess_MH, comp_ess_MH, esjd_MH, mat_RAB_2coin, 
                ess_RAB_2coin, comp_ess_RAB_2coin, esjd_RAB_2coin)
-
-    out
+  }
+  
+  out
+    
   }
 
 
