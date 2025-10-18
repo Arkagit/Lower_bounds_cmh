@@ -3,12 +3,15 @@ set.seed(1234)
 source("BVN_functions.R")
 
 library(MASS)
+library(latex2exp)
 
 rho = c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99, 0.999)
 n = 1e4
 m = 1e2
 lambda = c(1, 10)
+tar_mean = c(0, 0)
 x_init = c(0, 0)
+z_init = c(0, 0)
 A_B = matrix(0, nrow = n, ncol = length(rho))
 A_mh = matrix(0, nrow = n, ncol = length(rho))
 A_p = list(matrix(0, nrow = n, ncol = length(rho)), matrix(0, nrow = n, ncol = length(rho)))
@@ -37,11 +40,11 @@ for(i in 1:length(rho)){
 
 pdf("Gaussian_Lower_bound.pdf", height = 6, width = 8)
 par(mar = c(5.1, 4.8, 4.1, 2.1))
-plot(rho, 1 - colMeans(A_B), type = 'b', col = "black", ylim = c(0,1), ylab = "Estimated Lower Bounds")
+plot(rho, 1 - colMeans(A_B), type = 'b', col = "black", ylim = c(0,1), ylab = "Estimated Lower Bounds", xlab = expression(rho))
 lines(rho, 1 - colMeans(A_p[[1]]), type = 'b', col = "blue")
 lines(rho, 1 - colMeans(A_p[[2]]), type = 'b', col = "brown")
 lines(rho, 1 - colMeans(A_mh), type = 'b', col = "red")
-legend("bottomright", bty = "n", legend = c("Complete Block", "CMH1", "CMH (Augmented) (h = 1)", "CMH (Augmented) (h = 10)"), 
+legend("bottomright", bty = "n", legend = c("Complete Block MH", "CMH1", expression("Augmented CMH ("* lambda* "= 1)"), expression("Augmented CMH ("* lambda* "= 10)")), 
 	col = c("black", "red", "blue", "brown"), lty = 1, cex=0.65)
 dev.off()
 
