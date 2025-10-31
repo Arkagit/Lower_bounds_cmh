@@ -40,7 +40,7 @@ out_rho = list()
 
 for(i1 in 1:length(h)){
 
-	prop_cov = matrix(c(h[i1], 0, 0, h[i1]), nrow = 2)
+	prop_cov = h[i1]*diag(2) #matrix(c(h[i1], 0, 0, h[i1]), nrow = 2)
 
 	for(i in 1:length(rho)){
 
