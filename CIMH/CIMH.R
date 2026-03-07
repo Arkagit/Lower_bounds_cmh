@@ -27,7 +27,7 @@ z_values = bv_pdf(grid_points[,1], grid_points[,2])
 
 z_matrix <- matrix(z_values, nrow = length(x_1), ncol = length(x_2), byrow = FALSE)
 
-pdf("CIMH_contour_plot.pdf", width = 7, height = 6)
+pdf("CIMH_contour_plot.pdf", width = 5, height = 5)
 
 contour(x = x_1,
         y = x_2,
@@ -35,8 +35,9 @@ contour(x = x_1,
         col = "black",
         lwd = 1,
         nlevels = 10,
-        xlab = TeX(r'($X_1$)'),
-        ylab = TeX(r'($X_2$)')) 
+        xlab = TeX(r'($x$)'),
+        ylab = TeX(r'($y$)'),
+        cex = 1.5) 
 
 dev.off()
 
@@ -49,9 +50,10 @@ lower_bound = function(x_2){
 	return(out)
 }
 
-pdf("CIMH_lower_bound.pdf", width = 7, height = 6)
+pdf("CIMH_lower_bound.pdf", width = 5, height = 5)
 
-plot(x_2, lower_bound(x_2), xlab = TeX(r'($X_2$)'), ylab = "Lower Bound", type = "l")
+plot(x_2, lower_bound(x_2), xlab = TeX(r'($y$)'), 
+  ylab = "Lower Bound", type = "l", cex = 1.5)
 
 dev.off()
 
