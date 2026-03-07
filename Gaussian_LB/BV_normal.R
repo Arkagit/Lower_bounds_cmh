@@ -15,7 +15,7 @@ rho = c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99, 0.999)
 n = 1e4
 
 ## Auxiliary variances
-lambda = 1 #c(0.1, 1, 10)
+lambda = 2 #c(0.1, 1, 10)
 
 ## Target mean of X
 tar_mean = c(0, 0)
@@ -29,7 +29,7 @@ A_star_cmh = matrix(0, nrow = n, ncol = length(rho))
 A_star_proximal = matrix(0, nrow = n, ncol = length(rho))
 
 ## Proposal covariance matrix
-h = c(0.1, 1, 10)
+h = c(.1, 1, 10)
 
 output = list()
 out_rho = list()
@@ -80,17 +80,18 @@ for(i in 1:length(h)){
 
 	par(mar = c(5.1, 4.8, 4.1, 2.1))
 	plot(rho, lb_block[, i], type = 'b', col = "black", ylim = c(0,1),
-	      ylab = "Estimated Lower Bounds", xlab = expression(rho), main = paste("h = ", h[i]),
-	      cex = 1.5)
+	      ylab = "Estimated Lower Bounds", xlab = expression(rho), cex.lab = 1.5)
 	lines(rho, lb_proximal[, i], type = 'b', col = "blue")
 	lines(rho, lb_cmh[, i], type = 'b', col = "brown")
 	if(i != 1)
 	{
 	legend("bottomright", bty = "n", legend = c("Complete Block MH", "CMH1",
-	 expression("Proximal ("* lambda* "= 2)")), col = c("black", "brown", "blue"), lty = 1, cex = 1.6)
+	 expression("Proximal ("* lambda* "= 2)")), col = c("black", "brown", "blue"), 
+	 lty = 1, cex = 1.5)
 	} else{
 	legend("topleft", bty = "n", legend = c("Complete Block MH", "CMH1",
-	 expression("Proximal ("* lambda* "= 2)")), col = c("black", "brown", "blue"), lty = 1, cex = 1.6)		
+	 expression("Proximal ("* lambda* "= 2)")), col = c("black", "brown", "blue"), 
+	 lty = 1, cex = 1.5)		
 	}
 }
 

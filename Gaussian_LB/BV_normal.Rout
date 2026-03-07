@@ -1,6 +1,6 @@
 
-R version 4.4.2 (2024-10-31) -- "Pile of Leaves"
-Copyright (C) 2024 The R Foundation for Statistical Computing
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
 Platform: aarch64-apple-darwin20
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
@@ -23,6 +23,8 @@ Type 'q()' to quit R.
 > 
 > library(MASS)
 > library(latex2exp)
+Warning message:
+package ‘latex2exp’ was built under R version 4.5.2 
 > # library(foreach)
 > # library(doParallel)
 > # library(matrixcalc)
@@ -34,7 +36,7 @@ Type 'q()' to quit R.
 > n = 1e4
 > 
 > ## Auxiliary variances
-> lambda = 1 #c(0.1, 1, 10)
+> lambda = 2 #c(0.1, 1, 10)
 > 
 > ## Target mean of X
 > tar_mean = c(0, 0)
@@ -48,7 +50,7 @@ Type 'q()' to quit R.
 > A_star_proximal = matrix(0, nrow = n, ncol = length(rho))
 > 
 > ## Proposal covariance matrix
-> h = c(0.1, 1, 10)
+> h = c(.1, 1, 10)
 > 
 > output = list()
 > out_rho = list()
@@ -99,17 +101,18 @@ Type 'q()' to quit R.
 + 
 + 	par(mar = c(5.1, 4.8, 4.1, 2.1))
 + 	plot(rho, lb_block[, i], type = 'b', col = "black", ylim = c(0,1),
-+ 	      ylab = "Estimated Lower Bounds", xlab = expression(rho), main = paste("h = ", h[i]),
-+ 	      cex = 1.5)
++ 	      ylab = "Estimated Lower Bounds", xlab = expression(rho), cex.lab = 1.5)
 + 	lines(rho, lb_proximal[, i], type = 'b', col = "blue")
 + 	lines(rho, lb_cmh[, i], type = 'b', col = "brown")
 + 	if(i != 1)
 + 	{
 + 	legend("bottomright", bty = "n", legend = c("Complete Block MH", "CMH1",
-+ 	 expression("Proximal ("* lambda* "= 2)")), col = c("black", "brown", "blue"), lty = 1, cex = 1.6)
++ 	 expression("Proximal ("* lambda* "= 2)")), col = c("black", "brown", "blue"), 
++ 	 lty = 1, cex = 1.5)
 + 	} else{
 + 	legend("topleft", bty = "n", legend = c("Complete Block MH", "CMH1",
-+ 	 expression("Proximal ("* lambda* "= 2)")), col = c("black", "brown", "blue"), lty = 1, cex = 1.6)		
++ 	 expression("Proximal ("* lambda* "= 2)")), col = c("black", "brown", "blue"), 
++ 	 lty = 1, cex = 1.5)		
 + 	}
 + }
 > 
@@ -121,4 +124,4 @@ null device
 > 
 > proc.time()
    user  system elapsed 
- 22.291   0.144  23.168 
+ 33.635   0.178  34.210 
