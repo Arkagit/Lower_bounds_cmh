@@ -8,19 +8,19 @@ library(RcppEigen)
 
 ######## Target joint posterior density
 
-cppFunction('
-  double norm2(NumericVector loca, NumericVector locb) {
-    int n = loca.size();
-    double sum_sq = 0.0;
+# cppFunction('
+#   double norm2(NumericVector loca, NumericVector locb) {
+#     int n = loca.size();
+#     double sum_sq = 0.0;
 
-    for (int i = 0; i < n; ++i) {
-      double diff = loca[i] - locb[i];
-      sum_sq += diff * diff;
-    }
+#     for (int i = 0; i < n; ++i) {
+#       double diff = loca[i] - locb[i];
+#       sum_sq += diff * diff;
+#     }
 
-    return std::sqrt(sum_sq);
-  }
-')
+#     return std::sqrt(sum_sq);
+#   }
+# ')
 
 cppFunction('
 #include <Rcpp.h>
@@ -108,7 +108,7 @@ double l_target(NumericVector loc, double R, double sigma,
 ')
 
 
-######## RAM
+######## RAM kernel function from Tak et. al 
 
 ram.kernel <- function(current.location, current.aux, loc.number, scale) {
 
@@ -237,7 +237,7 @@ MHwG.RAM <- function(initial.loc, initial.aux, jump.scale,
 
 }
 
-######## Metropolis
+######## Random walk Metropolis
 Metro.kernel <- function(current.location, loc.number, jump.scale) {
 
   accept <- 0
