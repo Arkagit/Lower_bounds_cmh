@@ -26,7 +26,7 @@ for(i in 1: 1e4){
 }
 sum(lb_grid > ub_grid)
 
-pdf("Lower_Upper_bound.pdf", width = 5, height = 5)
+pdf("Lower_Upper_bound_1.pdf", width = 5, height = 5)
 
 plot(y_grid, lb_grid, xlab = "Y", ylab = "Total Variation Distance",
  ylim = c(0, 1), lwd = 1, type = "l", col = "blue")
