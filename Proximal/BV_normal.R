@@ -87,11 +87,11 @@ for(i in 1:length(h)){
 	{
 	legend("bottomright", bty = "n", legend = c("Complete Block MH", "CMH1",
 	 expression("Proximal ("* lambda* "= 2)")), col = c("black", "brown", "blue"), 
-	 lty = 1, cex = 1.8)
+	 lty = 1, cex = 1.7)
 	} else{
 	legend("topleft", bty = "n", legend = c("Complete Block MH", "CMH1",
 	 expression("Proximal ("* lambda* "= 2)")), col = c("black", "brown", "blue"), 
-	 lty = 1, cex = 1.5)		
+	 lty = 1, cex = 1.7)		
 	}
 }
 
