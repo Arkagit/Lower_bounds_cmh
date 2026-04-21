@@ -1,7 +1,7 @@
 
-R version 4.4.3 (2025-02-28) -- "Trophy Case"
-Copyright (C) 2025 The R Foundation for Statistical Computing
-Platform: x86_64-pc-linux-gnu
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20 (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
@@ -56,13 +56,28 @@ Type 'q()' to quit R.
 + 				(1 - rowMeans(RAM_2coin_d[[3]]))*(1 - rowMeans(RAM_2coin_d[[4]]))
 > 
 > 
-> pdf(paste("lb_RAM_Metro.pdf"), height = 8, width = 8)
-> plot(rowMeans(jumping.scale), RAM, ylab = "Lower Bounds", xlab = "Jump Scale", type = "l", col = "blue")
-> lines(rowMeans(jumping.scale), RAM_Barker, col = "brown")
-> lines(rowMeans(jumping.scale), Metro)
-> lines(rowMeans(jumping.scale), RAM_2coin, col = "purple")
-> legend("bottomright", legend = c("RAM", "RAM (Barker)", "RWM", "RAM (2 coin Barker)"),
-+  col = c("blue", "brown", "black", "red"), lty = 1, cex = 1.5)
+> pdf(paste("lb_RAM_Metro.pdf"), height = 7, width = 8)
+> # Increase margins (bottom, left, top, right)
+> par(mar = c(5.5, 5.5, 2, 2))
+> plot(rowMeans(jumping.scale), RAM, ylab = "Lower Bounds", xlab = "h", type = "l",
++  col = "blue", lwd = 1, cex.lab = 2)
+> #lines(rowMeans(jumping.scale), RAM_Barker, col = "brown")
+> lines(rowMeans(jumping.scale), Metro, col = "red", lwd = 2)
+> lines(rowMeans(jumping.scale), RAM_2coin, col = "black", lwd = 2)
+> legend("bottomright", bty = "n",legend = c("CRAM (aux)", "CMH", "CRAB (2 coin Barker)"),
++  col = c("blue", "red", "black"), lty = 1, cex = 2, lwd = 2)
+> dev.off()
+null device 
+          1 
+> 
+> log_jump = log(rowMeans(jumping.scale))
+> pdf(paste("Log_lb_RAM_Metro.pdf"), height = 8, width = 8)
+> plot(log_jump, RAM, ylab = "Lower Bounds", xlab = "log(h)", type = "l", col = "blue")
+> lines(log_jump, RAM_Barker, col = "brown")
+> lines(log_jump, Metro)
+> lines(log_jump, RAM_2coin, col = "purple")
+> legend("topleft", legend = c("RAM", "RAM (Barker)", "RWM", "RAM (2 coin Barker)"),
++  col = c("blue", "brown", "black", "purple"), lty = 1, cex = 1.5)
 > dev.off()
 null device 
           1 
@@ -71,4 +86,4 @@ null device
 > 
 > proc.time()
    user  system elapsed 
-  2.555   0.159   2.698 
+  1.509   0.105   1.785 

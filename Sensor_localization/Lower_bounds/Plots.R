@@ -37,14 +37,16 @@ RAM_2coin = (1 - rowMeans(RAM_2coin_d[[1]]))*(1 - rowMeans(RAM_2coin_d[[2]]))*
 				(1 - rowMeans(RAM_2coin_d[[3]]))*(1 - rowMeans(RAM_2coin_d[[4]]))
 
 
-pdf(paste("lb_RAM_Metro.pdf"), height = 10, width = 10)
+pdf(paste("lb_RAM_Metro.pdf"), height = 7, width = 8)
+# Increase margins (bottom, left, top, right)
+par(mar = c(5.5, 5.5, 2, 2))
 plot(rowMeans(jumping.scale), RAM, ylab = "Lower Bounds", xlab = "h", type = "l",
- col = "blue", lwd = 2, cex.lab = 1.3)
+ col = "blue", lwd = 1, cex.lab = 2)
 #lines(rowMeans(jumping.scale), RAM_Barker, col = "brown")
 lines(rowMeans(jumping.scale), Metro, col = "red", lwd = 2)
 lines(rowMeans(jumping.scale), RAM_2coin, col = "black", lwd = 2)
-legend("bottomright", legend = c("CRAM (aux)", "CMH", "CRAB (2 coin Barker)"),
- col = c("blue", "red", "black"), lty = 1, cex = 1.5, lwd = 2)
+legend("bottomright", bty = "n",legend = c("CRAM (aux)", "CMH", "CRAB (2 coin Barker)"),
+ col = c("blue", "red", "black"), lty = 1, cex = 2, lwd = 2)
 dev.off()
 
 log_jump = log(rowMeans(jumping.scale))

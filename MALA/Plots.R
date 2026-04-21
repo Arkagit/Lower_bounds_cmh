@@ -20,7 +20,7 @@ for (i in 1:length(h)) {
        type = "l",
        ylim = c(0, 1),
        ylab = "(1 - A*)",
-       xlab = TeX(r'($X_2$)'),
+       xlab = TeX(r'($Y$)'),
        main = paste("h = ", h[i]),
        cex.lab = 5,     
        cex.main = 5.0    
