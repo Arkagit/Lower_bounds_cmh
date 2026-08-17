@@ -1,0 +1,64 @@
+
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> set.seed(1234)
+> 
+> source("functions.R")
+> 
+> c0 = 0.68
+> a = 1
+> b = 10
+> 
+> h = c(0.3, 0.5, 1, 5, 10, 20, 50, 100)
+> n = c(5e2, 7e2, 1e3, 3e3, 5e3, 1e4, 5e4, 1e5)
+> 
+> pairs_labels = paste("(", h, ",\n", 
++                      ifelse(n >= 1000, paste(format(n/1000, digits=1), "k", sep=""), n), 
++                      ")", sep = "")
+> 
+> lb_out = vm_lb(n, h, a, b)
+> x_pos = 1:length(pairs_labels)
+> 
+> pdf("VM_lower_bound.pdf", height = 7, width = 9)
+> 
+> par(mar = c(5.1, 4.1, 4.1, 2.1))
+> 
+> plot(x_pos, lb_out,
++      type = "b",
++      xaxt = "n",
++      pch = 16,
++      col = "steelblue",
++      lwd = 2,
++      xlab = "(h, n) pairs",
++      ylab = "Lower Bounds",
++      cex.lab = 1.2,
++      cex.main = 1.3)
+> 
+> axis(1, at = x_pos, labels = pairs_labels, las = 1, cex.axis = 1, 
++      tck = -0.02, padj = 0.5, mgp = c(3, 0.5, 0))
+> 
+> grid(lty = 2, col = "gray")
+> 
+> dev.off()
+null device 
+          1 
+> 
+> proc.time()
+   user  system elapsed 
+  0.088   0.039   0.150 
