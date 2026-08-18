@@ -42,14 +42,14 @@ plot(x, lb_out[1, ],
      ylim = c(lb_min, lb_max),
      xlab = "Data Size",
      ylab = "Lower Bounds",
-     cex.lab = 1.5,
+     cex.lab = 2,
      cex.axis = 1.3)
 
 axis(1,
      at = x,
      labels = c("500", "700", "1K", "3K",
                 "5K", "10K", "50K", "100K"),
-     cex.axis = 1.3)
+     cex.axis = 1.5)
 
 lines(x, lb_out[2, ],
       type = "b",
@@ -86,6 +86,6 @@ legend("right",
        lty = 1,
        lwd = 2.5,
        bty = "n",
-       cex = 1.1)
+       cex = 2)
 
 dev.off()

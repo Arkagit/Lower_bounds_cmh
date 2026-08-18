@@ -46,7 +46,7 @@ pair_labels <- paste0("(", d, ",", format(n, scientific = FALSE), ")")
 
 
 # Create PDF with wider dimensions for better label spacing
-pdf("BLR_lower_bound_logn.pdf", width = 14, height = 7)
+pdf("BLR_lower_bound_logn.pdf", width = 10, height = 10)
 
 # Increase bottom margin significantly to fit horizontal labels
 par(mar = c(8, 7, 5, 4), mgp = c(4, 1, 0))
@@ -127,7 +127,7 @@ dev.off()
 
 ##############################################################
 
-pdf("BLR_lower_bound_n.pdf", width = 14, height = 7)
+pdf("BLR_lower_bound_n.pdf", width = 10, height = 10)
 
 # Increase bottom margin significantly to fit horizontal labels
 par(mar = c(8, 7, 5, 4), mgp = c(4, 1, 0))
