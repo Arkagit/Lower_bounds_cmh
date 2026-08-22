@@ -2,6 +2,13 @@ library(pracma)
 
 # \phi(n) = \log (n)
 
+n = 5e5; d = 7
+
+log(n)
+
+ev = eigen(t(W)%*%W)$values; max(ev)/min(ev)
+
+
 design_mat_poor_cond <- function(n, d) {
   if (n <= 1) stop("n must be > 1 so that log(n) > 0")
   if (d < 2) stop("d must be at least 2")

@@ -12,7 +12,6 @@ num_h = 4
 
 
 
-
 lb1 = matrix(0, ncol = num_h, nrow = length(d))
 lb2 = matrix(0, ncol = num_h, nrow = length(d))
 
@@ -20,10 +19,10 @@ lb2 = matrix(0, ncol = num_h, nrow = length(d))
 for(j in 1:length(d)){
 	xi_star = rnorm(d[j], mean = 0, sd = 1) 
 	h = matrix(0, nrow = num_h, ncol = length(d[j]))
-	h[1,] = 2
-	h[2,] = 2/d[j]
-	h[3,] = 2/(d[j]* n[j])
-	h[4,] = 2/(d[j]* log(n[j]))
+	h[1,] = 1
+	h[2,] = 1/d[j]
+	h[3,] = 1/(n[j])
+	h[4,] = 1/(log(n[j]))
 
 	W1 = design_mat_poor_cond(n[j], d[j])$W
 	W2 = design_mat_good_cond(n[j], d[j])$W
@@ -99,19 +98,19 @@ lines(x_pos, lb1[, 4],
 axis(1,
      at = x_pos,
      labels = pair_labels,
-     cex.axis = 1.5,
+     cex.axis = 1,
      las = 1)  # Keep labels horizontal (las = 1)
 
 # Add X-axis title below the labels
-mtext("(Dimension, Data Size)", side = 1, line = 4.5, cex = 2)
+mtext("(Dimension, Data Size)", side = 1, line = 4.5, cex = 1.5)
 
 
 legend("bottomright", bty = "n",
        legend = c(
          expression(h == 1),
          expression(h == 1/d),
-         expression(h == 1/d*n),
-         expression(h == 1/d*log(n))
+         expression(h == 1/n),
+         expression(h == 1/log(n))
        ),
        col = c("blue", "darkolivegreen", "brown", "purple"),
        pch = c(16, 17, 15, 18),
@@ -151,7 +150,7 @@ plot(x_pos, lb2[, 1],
      xlab = "",
      ylab = "Lower Bounds",
      cex.lab = 2,
-     cex.axis = 1.5,
+     cex.axis = 1.2,
      cex.main = 1.3)
 
 # Add the remaining 3 lines with different colors
@@ -180,18 +179,18 @@ lines(x_pos, lb2[, 4],
 axis(1,
      at = x_pos,
      labels = pair_labels,
-     cex.axis = 1.5,
+     cex.axis = 1.2,
      las = 1)  
 
-mtext("(Dimension, Data Size)", side = 1, line = 4.5, cex = 2)
+mtext("(Dimension, Data Size)", side = 1, line = 4.5, cex = 1.5)
 
 
 legend("bottomright", bty = "n",
        legend = c(
          expression(h == 1),
          expression(h == 1/d),
-         expression(h == 1/d*n),
-         expression(h == 1/d*log(n))
+         expression(h == 1/n),
+         expression(h == 1/log(n))
        ),
        col = c("blue", "darkolivegreen", "brown", "purple"),
        pch = c(16, 17, 15, 18),
