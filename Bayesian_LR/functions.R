@@ -6,7 +6,7 @@ n = 5e5; d = 7
 
 log(n)
 
-ev = eigen(t(W)%*%W)$values; max(ev)/min(ev)
+# ev = eigen(t(W)%*%W)$values; max(ev)/min(ev)
 
 
 design_mat_poor_cond <- function(n, d) {

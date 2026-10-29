@@ -3,7 +3,7 @@ dd_psi = function(y){
 	return(out_psi)
 }
 
-vm_lb = function(n, h, a, b){
-	out = 1 - 1/sqrt(h * (n * dd_psi(b) - c0 / (a^2)))
+vm_lb = function(n, h2, a, b){
+	out = 1 - 1/sqrt(h2 * (n * dd_psi(b) - c0 / (a^2)))
 	return(out)
 }

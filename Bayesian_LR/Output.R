@@ -17,21 +17,21 @@ lb2 = matrix(0, ncol = num_h, nrow = length(d))
 
 
 for(j in 1:length(d)){
-	xi_star = rnorm(d[j], mean = 0, sd = 1) 
-	h = matrix(0, nrow = num_h, ncol = length(d[j]))
-	h[1,] = 1
-	h[2,] = 1/d[j]
-	h[3,] = 1/(n[j])
-	h[4,] = 1/(log(n[j]))
+  xi_star = rnorm(d[j], mean = 0, sd = 1) 
+  h = matrix(0, nrow = num_h, ncol = length(d[j]))
+  h[1,] = 1
+  h[2,] = 1/d[j]
+  h[3,] = 1/(n[j])
+  h[4,] = 1/(log(n[j]))
 
-	W1 = design_mat_poor_cond(n[j], d[j])$W
-	W2 = design_mat_good_cond(n[j], d[j])$W
-	
+  W1 = design_mat_poor_cond(n[j], d[j])$W
+  W2 = design_mat_good_cond(n[j], d[j])$W
+  
 
-	for(i in 1:num_h){
-		lb1[j, i] = VM_lower_bound(n[j], d[j], h[i], b, zeta_star, xi_star, W1)
-		lb2[j, i] = VM_lower_bound(n[j], d[j], h[i], b, zeta_star, xi_star, W2)
-	}
+  for(i in 1:num_h){
+    lb1[j, i] = VM_lower_bound(n[j], d[j], h[i], b, zeta_star, xi_star, W1)
+    lb2[j, i] = VM_lower_bound(n[j], d[j], h[i], b, zeta_star, xi_star, W2)
+  }
 }
 
 lb1
@@ -68,7 +68,7 @@ plot(x_pos, lb1[, 1],
      xaxt = "n",
      xlab = "",
      ylab = "Lower Bounds",
-     cex.lab = 2,
+     cex.lab = 2.5,
      cex.axis = 1.2,
      cex.main = 1.3)
 
@@ -102,7 +102,7 @@ axis(1,
      las = 1)  # Keep labels horizontal (las = 1)
 
 # Add X-axis title below the labels
-mtext("(Dimension, Data Size)", side = 1, line = 4.5, cex = 1.5)
+mtext("(Dimension, Data Size)", side = 1, line = 4.5, cex = 2.5)
 
 
 legend("bottomright", bty = "n",
@@ -116,7 +116,7 @@ legend("bottomright", bty = "n",
        pch = c(16, 17, 15, 18),
        lty = 1,
        lwd = 2.5,
-       cex = 2,
+       cex = 2.5,
        bg = "white")
 
 dev.off()
@@ -149,7 +149,7 @@ plot(x_pos, lb2[, 1],
      xaxt = "n",
      xlab = "",
      ylab = "Lower Bounds",
-     cex.lab = 2,
+     cex.lab = 2.5,
      cex.axis = 1.2,
      cex.main = 1.3)
 
@@ -182,7 +182,7 @@ axis(1,
      cex.axis = 1.2,
      las = 1)  
 
-mtext("(Dimension, Data Size)", side = 1, line = 4.5, cex = 1.5)
+mtext("(Dimension, Data Size)", side = 1, line = 4.5, cex = 2.5)
 
 
 legend("bottomright", bty = "n",
@@ -196,7 +196,7 @@ legend("bottomright", bty = "n",
        pch = c(16, 17, 15, 18),
        lty = 1,
        lwd = 2.5,
-       cex = 2,
+       cex = 2.5,
        bg = "white")
 
 dev.off()
